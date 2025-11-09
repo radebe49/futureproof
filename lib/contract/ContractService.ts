@@ -320,8 +320,8 @@ export class ContractService {
       let web3FromAddress = web3FromAddressCache;
       
       if (!web3FromAddress) {
-        const module = await import("@polkadot/extension-dapp");
-        web3FromAddress = module.web3FromAddress;
+        const extensionDapp = await import("@polkadot/extension-dapp");
+        web3FromAddress = extensionDapp.web3FromAddress;
         web3FromAddressCache = web3FromAddress;
       }
       

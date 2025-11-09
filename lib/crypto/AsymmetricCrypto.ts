@@ -53,8 +53,8 @@ export class AsymmetricCrypto {
       let decodeAddress = decodeAddressCache;
       
       if (!decodeAddress) {
-        const module = await import("@polkadot/util-crypto");
-        decodeAddress = module.decodeAddress;
+        const utilCrypto = await import("@polkadot/util-crypto");
+        decodeAddress = utilCrypto.decodeAddress;
         decodeAddressCache = decodeAddress;
       }
 
