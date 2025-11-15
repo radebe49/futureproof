@@ -1,6 +1,6 @@
 # Storage Components
 
-UI components for IPFS storage operations with Web3.Storage and Pinata fallback.
+UI components for IPFS storage operations with Storacha Network.
 
 ## Components
 
@@ -10,7 +10,7 @@ Displays real-time upload progress with provider information and error handling.
 
 **Features:**
 - Real-time progress tracking (0-100%)
-- Provider badge (Web3.Storage or Pinata)
+- Provider badge (Storacha)
 - Status indicators (uploading, success, error)
 - Smooth progress animation
 - Error messages with retry option
@@ -25,7 +25,7 @@ import { ipfsService } from '@/lib/storage';
 function MyComponent() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
-  const [provider, setProvider] = useState<'web3.storage' | 'pinata'>();
+  const [provider, setProvider] = useState<'storacha'>();
   const [error, setError] = useState<string>();
 
   const handleUpload = async (blob: Blob) => {
@@ -65,7 +65,7 @@ function MyComponent() {
 |------|------|-------------|
 | `progress` | `number` | Current upload progress (0-100) |
 | `status` | `'idle' \| 'uploading' \| 'success' \| 'error'` | Upload status |
-| `provider` | `'web3.storage' \| 'pinata'` | Provider being used (optional) |
+| `provider` | `'storacha'` | Provider being used (optional) |
 | `error` | `string` | Error message if upload failed (optional) |
 | `onRetry` | `() => void` | Callback for retry action (optional) |
 | `onCancel` | `() => void` | Callback for cancel action (optional) |
@@ -78,11 +78,10 @@ The UploadProgress component is designed to work seamlessly with the IPFSService
 import { ipfsService } from '@/lib/storage';
 import { UploadProgress } from '@/components/storage';
 
-// The IPFSService automatically:
-// 1. Tries Web3.Storage first (3 attempts with exponential backoff)
-// 2. Falls back to Pinata if Web3.Storage fails
-// 3. Returns the provider used in the result
-// 4. Calls onProgress callback during upload
+// The StorachaService automatically:
+// 1. Tries Storacha upload (3 attempts with exponential backoff)
+// 2. Returns the provider used in the result
+// 3. Calls onProgress callback during upload
 
 const result = await ipfsService.uploadEncryptedBlob(
   encryptedBlob,
@@ -95,7 +94,7 @@ const result = await ipfsService.uploadEncryptedBlob(
   }
 );
 
-// result.provider will be 'web3.storage' or 'pinata'
+// result.provider will be 'storacha'
 setProvider(result.provider);
 ```
 
@@ -103,12 +102,11 @@ setProvider(result.provider);
 
 Visit `/test-media` to see a live demo of the UploadProgress component with simulated upload behavior including:
 - Progress tracking
-- Provider switching (Web3.Storage → Pinata fallback)
+- Provider display (Storacha)
 - Error handling with retry
 - Success states
 
 ## Requirements
 
 This component fulfills:
-- **Requirement 5.3**: Pinata fallback service
 - **Requirement 5.4**: Upload progress tracking and display

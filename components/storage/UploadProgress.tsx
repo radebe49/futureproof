@@ -17,7 +17,7 @@ export interface UploadProgressProps {
   /** Upload status */
   status: 'idle' | 'uploading' | 'success' | 'error';
   /** Provider being used for upload */
-  provider?: 'web3.storage' | 'pinata';
+  provider?: 'storacha';
   /** Error message if upload failed */
   error?: string;
   /** Callback for retry action */
@@ -81,8 +81,8 @@ export function UploadProgress({
   const getProviderBadge = () => {
     if (!provider) return null;
 
-    const providerName = provider === 'web3.storage' ? 'Web3.Storage' : 'Pinata';
-    const providerColor = provider === 'web3.storage' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800';
+    const providerName = 'Storacha';
+    const providerColor = 'bg-purple-100 text-purple-800';
 
     return (
       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${providerColor}`}>

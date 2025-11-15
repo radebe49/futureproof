@@ -154,9 +154,10 @@ futureproof-app/
 - **Framework**: Next.js 14+ with App Router
 - **Language**: TypeScript with strict mode
 - **Styling**: Tailwind CSS
-- **Blockchain**: Polkadot.js API (Westend testnet)
-- **Storage**: Web3.Storage (IPFS)
-- **Wallet**: Talisman via @polkadot/extension-dapp
+- **Blockchain**: Polkadot.js API (Passet Hub testnet)
+- **Smart Contracts**: Solidity 0.8.20 (PolkaVM via pallet-revive)
+- **Storage**: Storacha Network (IPFS)
+- **Wallet**: Talisman or MetaMask
 - **Encryption**: Web Crypto API (AES-256-GCM)
 
 ## Privacy and Security

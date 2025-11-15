@@ -25,7 +25,6 @@ export interface UnlockResult {
  */
 export interface UnlockOptions {
   onProgress?: (stage: string, progress: number) => void;
-  demoMode?: boolean;
 }
 
 /**
@@ -38,20 +37,10 @@ export class UnlockService {
    * Requirements: 9.1, 9.2
    *
    * @param unlockTimestamp - The timestamp when the message becomes unlockable
-   * @param demoMode - If true, bypass timestamp verification
    * @returns true if unlockable, false otherwise
-   * @throws Error if timestamp not reached and not in demo mode
+   * @throws Error if timestamp not reached
    */
-  static verifyTimestamp(
-    unlockTimestamp: number,
-    demoMode: boolean = false
-  ): boolean {
-    // Check for demo mode
-    if (demoMode) {
-      console.warn("DEMO MODE: Bypassing timestamp verification");
-      return true;
-    }
-
+  static verifyTimestamp(unlockTimestamp: number): boolean {
     const currentTime = Date.now();
 
     if (currentTime < unlockTimestamp) {
@@ -89,12 +78,12 @@ export class UnlockService {
     message: Message,
     options: UnlockOptions = {}
   ): Promise<UnlockResult> {
-    const { onProgress, demoMode = false } = options;
+    const { onProgress } = options;
 
     try {
       // Stage 1: Verify timestamp
       onProgress?.("Verifying unlock time", 10);
-      this.verifyTimestamp(message.unlockTimestamp, demoMode);
+      this.verifyTimestamp(message.unlockTimestamp);
 
       // Stage 2: Download encrypted AES key from IPFS
       onProgress?.("Downloading encryption key", 20);
@@ -174,77 +163,18 @@ export class UnlockService {
   }
 
   /**
-   * Mark a message as unlocked in localStorage
-   *
-   * Requirements: 8.5
-   *
-   * @param messageId - The ID of the message to mark as unlocked
-   */
-  static markAsUnlocked(messageId: string): void {
-    try {
-      const unlockedMessages = this.getUnlockedMessages();
-      if (!unlockedMessages.includes(messageId)) {
-        unlockedMessages.push(messageId);
-        localStorage.setItem(
-          "futureproof_unlocked_messages",
-          JSON.stringify(unlockedMessages)
-        );
-      }
-    } catch (error) {
-      console.error("Failed to mark message as unlocked:", error);
-    }
-  }
-
-  /**
    * Check if a message has been unlocked
+   * 
+   * Note: Unlock status is determined by comparing current time with unlock timestamp.
+   * Once a message's unlock time has passed, it's considered unlockable.
+   * There's no need to track "unlocked" state separately since the blockchain
+   * timestamp is the source of truth.
    *
-   * @param messageId - The ID of the message to check
-   * @returns true if message has been unlocked, false otherwise
+   * @param unlockTimestamp - The unlock timestamp from the message metadata
+   * @returns true if message can be unlocked (time has passed), false otherwise
    */
-  static isMessageUnlocked(messageId: string): boolean {
-    try {
-      const unlockedMessages = this.getUnlockedMessages();
-      return unlockedMessages.includes(messageId);
-    } catch (error) {
-      console.error("Failed to check unlock status:", error);
-      return false;
-    }
+  static isMessageUnlockable(unlockTimestamp: number): boolean {
+    return Date.now() >= unlockTimestamp;
   }
 
-  /**
-   * Get list of unlocked message IDs from localStorage
-   *
-   * @returns Array of unlocked message IDs
-   */
-  static getUnlockedMessages(): string[] {
-    try {
-      const stored = localStorage.getItem("futureproof_unlocked_messages");
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error("Failed to get unlocked messages:", error);
-      return [];
-    }
-  }
-
-  /**
-   * Clear all unlocked message records
-   */
-  static clearUnlockedMessages(): void {
-    try {
-      localStorage.removeItem("futureproof_unlocked_messages");
-    } catch (error) {
-      console.error("Failed to clear unlocked messages:", error);
-    }
-  }
-
-  /**
-   * Check if demo mode is enabled via environment variable
-   *
-   * Requirements: 9.3
-   *
-   * @returns true if demo mode is enabled
-   */
-  static isDemoModeEnabled(): boolean {
-    return process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-  }
 }

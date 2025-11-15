@@ -49,11 +49,13 @@ export default function UnlockPage() {
           return;
         }
 
-        // Check if already unlocked
-        const isUnlocked = UnlockService.isMessageUnlocked(messageId);
+        // Check if message is unlockable based on timestamp
+        const isUnlockable = UnlockService.isMessageUnlockable(
+          messageMetadata.unlockTimestamp
+        );
         const status = calculateMessageStatus(
           messageMetadata.unlockTimestamp,
-          isUnlocked
+          isUnlockable
         );
 
         const msg: Message = {
@@ -81,19 +83,16 @@ export default function UnlockPage() {
     loadMessage();
   }, [address, isConnected, messageId]);
 
-  const handleUnlock = async (msg: Message, demoMode?: boolean) => {
+  const handleUnlock = async (msg: Message) => {
     try {
       const result = await UnlockService.unlockMessage(msg, {
-        demoMode,
         onProgress: (stage, progress) => {
           console.log(`${stage}: ${progress}%`);
         },
       });
 
-      // Mark as unlocked
-      UnlockService.markAsUnlocked(msg.id);
-
-      // Update message status
+      // Update message status to Unlocked
+      // Note: No localStorage tracking needed - status is determined by timestamp
       setMessage((prev) =>
         prev ? { ...prev, status: "Unlocked" } : null
       );

@@ -92,12 +92,7 @@ Add these secrets in GitHub repository settings (Settings → Secrets and variab
 | `NEXT_PUBLIC_RPC_ENDPOINT` | Polkadot RPC endpoint | `wss://westend-rpc.polkadot.io` |
 | `NEXT_PUBLIC_NETWORK` | Network name | `westend` |
 
-#### Optional Secrets
 
-| Secret Name | Description |
-|------------|-------------|
-| `NEXT_PUBLIC_PINATA_API_KEY` | Pinata API key for IPFS fallback |
-| `NEXT_PUBLIC_PINATA_SECRET` | Pinata secret key |
 
 ### 2. Get Vercel Credentials
 

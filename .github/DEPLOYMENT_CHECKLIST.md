@@ -58,8 +58,7 @@ Use this checklist to ensure proper deployment setup for FutureProof.
 - [ ] `NEXT_PUBLIC_CONTRACT_ADDRESS` added
 - [ ] `NEXT_PUBLIC_RPC_ENDPOINT` added
 - [ ] `NEXT_PUBLIC_NETWORK` added
-- [ ] Optional: `NEXT_PUBLIC_PINATA_API_KEY` added
-- [ ] Optional: `NEXT_PUBLIC_PINATA_SECRET` added
+- [ ] Optional: `NEXT_PUBLIC_STORACHA_GATEWAY` added
 
 ## Vercel Setup
 

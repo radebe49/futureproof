@@ -1,13 +1,12 @@
 /**
- * IPFS Storage Service
+ * IPFS Storage Service (Legacy)
  *
- * Handles encrypted blob uploads to Web3.Storage (w3up) with progress tracking,
- * CID verification, and Pinata fallback.
+ * Legacy implementation for backward compatibility.
+ * New code should use StorachaService instead.
  *
  * Requirements: 3.6, 5.1, 5.2, 5.3, 5.4, 5.6
  */
 
-import * as Client from "@web3-storage/w3up-client";
 import { withTimeout, TIMEOUTS } from "@/utils/timeout";
 
 /**
@@ -16,7 +15,7 @@ import { withTimeout, TIMEOUTS } from "@/utils/timeout";
 export interface IPFSUploadResult {
   cid: string;
   size: number;
-  provider: "web3.storage" | "pinata";
+  provider: "web3.storage";
 }
 
 /**
@@ -40,53 +39,22 @@ const INITIAL_RETRY_DELAY = 1000;
 
 /**
  * IPFSService provides methods for uploading encrypted blobs to IPFS
- * via Web3.Storage w3up-client with progress tracking, verification, and Pinata fallback.
+ * via Web3.Storage w3up-client with progress tracking and verification.
+ *
+ * @deprecated Use StorachaService for new implementations
  */
 export class IPFSService {
-  private client: Client.Client | null = null;
-  private pinataClient: any = null;
-
   /**
-   * Initialize the Web3.Storage w3up client
-   *
-   * @throws Error if client initialization fails
+   * Legacy IPFS service - use StorachaService for new implementations
+   * This class is kept for backward compatibility only
    */
-  private async getClient(): Promise<Client.Client> {
-    if (this.client) {
-      return this.client;
-    }
-
-    try {
-      // Create a new w3up client
-      this.client = await Client.create();
-
-      // Note: The new w3up client requires authentication via email or delegation
-      // For now, we'll create the client but authentication needs to be handled separately
-      // See: https://web3.storage/docs/w3up-client/
-
-      return this.client;
-    } catch (error) {
-      throw new Error(
-        `Failed to initialize Web3.Storage client: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
+  private async getClient(): Promise<any> {
+    throw new Error(
+      "Legacy IPFSService is deprecated. Please use StorachaService instead."
+    );
   }
 
-  /**
-   * Initialize the Pinata client
-   *
-   * Note: Pinata SDK is disabled for now as it requires Node.js modules
-   * that are not available in the browser. For production, consider using
-   * Pinata's REST API directly or a browser-compatible SDK.
-   *
-   * @returns Pinata client or null if credentials not configured
-   */
-  private getPinataClient(): any | null {
-    // Pinata SDK requires Node.js modules (fs, stream) that aren't available in browser
-    // For now, we'll disable Pinata fallback
-    // TODO: Implement Pinata REST API directly for browser compatibility
-    return null;
-  }
+
 
   /**
    * Sleep for a specified duration (used for retry backoff)
@@ -166,21 +134,20 @@ export class IPFSService {
   }
 
   /**
-   * Upload an encrypted blob to Web3.Storage (IPFS) with Pinata fallback
+   * Upload an encrypted blob to Web3.Storage (IPFS)
    *
-   * Implements retry logic for transient failures, verifies
-   * CID accessibility after upload, and falls back to Pinata on failure.
+   * Implements retry logic for transient failures and verifies
+   * CID accessibility after upload.
    *
    * Retry Strategy:
    * - Retries transient failures (network errors, timeouts, 429, 503)
    * - Exponential backoff with jitter: 1s, 2s, 4s (±30% jitter)
    * - Fails fast on non-retryable errors (4xx except 429)
-   * - Maximum 3 attempts per provider
+   * - Maximum 3 attempts
    *
    * Requirements:
    * - 5.1: Upload encrypted blob to Web3.Storage
    * - 5.2: Return IPFS CID on successful upload
-   * - 5.3: Implement Pinata fallback with retry logic
    * - 5.4: Add upload progress tracking
    * - 5.6: Verify CID accessibility after upload
    *
@@ -188,7 +155,7 @@ export class IPFSService {
    * @param filename - Optional filename for the uploaded file
    * @param options - Upload options including progress callback
    * @returns Promise resolving to upload result with CID and provider
-   * @throws Error if both Web3.Storage and Pinata uploads fail
+   * @throws Error if upload fails
    */
   async uploadEncryptedBlob(
     blob: Blob,
@@ -229,46 +196,9 @@ export class IPFSService {
       }
     }
 
-    // If Web3.Storage failed, try Pinata fallback
-    if (this.getPinataClient()) {
-      console.log("Falling back to Pinata...");
-
-      for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
-        try {
-          if (attempt > 0) {
-            // Exponential backoff with jitter
-            const baseDelay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
-            const jitter = Math.random() * 0.3 * baseDelay;
-            const delay = baseDelay + jitter;
-            await this.sleep(delay);
-          }
-
-          const result = await this.uploadToPinata(blob, filename, options);
-          return result;
-        } catch (error) {
-          lastError =
-            error instanceof Error ? error : new Error("Unknown error");
-
-          // Check if error is retryable
-          if (!this.isRetryableError(lastError)) {
-            console.error(
-              "Non-retryable error, failing fast:",
-              lastError.message
-            );
-            break; // Exit retry loop, will throw below
-          }
-
-          console.warn(
-            `Pinata upload attempt ${attempt + 1}/${MAX_RETRY_ATTEMPTS} failed:`,
-            lastError.message
-          );
-        }
-      }
-    }
-
-    // Both providers failed
+    // All attempts failed
     throw new Error(
-      `Upload failed after ${MAX_RETRY_ATTEMPTS} attempts on all providers. Last error: ${lastError?.message}`
+      `Upload failed after ${MAX_RETRY_ATTEMPTS} attempts. Last error: ${lastError?.message}`
     );
   }
 
@@ -282,81 +212,16 @@ export class IPFSService {
    * @throws Error if upload fails
    */
   private async uploadToWeb3Storage(
-    blob: Blob,
-    filename: string,
-    options: UploadOptions
-  ): Promise<IPFSUploadResult> {
-    const client = await this.getClient();
-    const { onProgress } = options;
-
-    // Create a File from the blob
-    const file = new File([blob], filename, { type: blob.type });
-
-    // Track upload progress if callback provided
-    const totalBytes = blob.size;
-
-    // Upload to Web3.Storage with timeout based on file size
-    const timeout =
-      blob.size > 10_000_000
-        ? TIMEOUTS.IPFS_UPLOAD_LARGE
-        : TIMEOUTS.IPFS_UPLOAD_SMALL;
-
-    // Progress tracking for w3up-client
-    // Note: onShardStored receives CARMetadata object with size property
-    const onStoredChunk = onProgress
-      ? (meta: { size: number }) => {
-          const progress = Math.round((meta.size / totalBytes) * 100);
-          onProgress(Math.min(progress, 99)); // Cap at 99% until verification
-        }
-      : undefined;
-
-    // Upload the file and get the CID
-    const cid = await withTimeout(
-      client.uploadFile(file, {
-        onShardStored: onStoredChunk,
-      }),
-      timeout,
-      `IPFS upload (${(blob.size / 1024 / 1024).toFixed(2)} MB)`
-    );
-
-    // Final progress update
-    if (onProgress) {
-      onProgress(100);
-    }
-
-    // Verify CID accessibility
-    await this.verifyCIDAccessibility(cid.toString());
-
-    return {
-      cid: cid.toString(),
-      size: blob.size,
-      provider: "web3.storage",
-    };
-  }
-
-  /**
-   * Upload to Pinata as fallback
-   *
-   * Requirement 5.3: Implement Pinata upload as fallback
-   *
-   * Note: Currently disabled due to Node.js dependency issues in browser.
-   * TODO: Implement using Pinata REST API for browser compatibility.
-   *
-   * @param _blob - The encrypted blob to upload
-   * @param _filename - Filename for the uploaded file
-   * @param _options - Upload options
-   * @returns Promise resolving to upload result
-   * @throws Error if upload fails
-   */
-  private async uploadToPinata(
     _blob: Blob,
     _filename: string,
     _options: UploadOptions
   ): Promise<IPFSUploadResult> {
     throw new Error(
-      "Pinata fallback is currently unavailable. Please ensure Web3.Storage is accessible."
+      "Legacy Web3.Storage upload is deprecated. Please use StorachaService instead."
     );
   }
+
+
 
   /**
    * Validate CID format
@@ -367,9 +232,11 @@ export class IPFSService {
   private isValidCID(cid: string): boolean {
     // CIDv0: Qm... (base58, 46 characters)
     // CIDv1: bafy... (base32) or other multibase prefixes
-    return /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/.test(cid) || 
-           /^b[a-z2-7]{58,}/.test(cid) ||
-           /^bafy[a-z2-7]{55,}/.test(cid);
+    return (
+      /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/.test(cid) ||
+      /^b[a-z2-7]{58,}/.test(cid) ||
+      /^bafy[a-z2-7]{55,}/.test(cid)
+    );
   }
 
   /**
@@ -417,7 +284,9 @@ export class IPFSService {
         );
 
         if (!res.ok) {
-          throw new Error(`CID ${cid} is not accessible (status: ${res.status})`);
+          throw new Error(
+            `CID ${cid} is not accessible (status: ${res.status})`
+          );
         }
 
         // Success - exit retry loop

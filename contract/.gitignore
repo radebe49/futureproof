@@ -1,0 +1,15 @@
+# Rust
+target/
+Cargo.lock
+
+# ink! artifacts
+*.contract
+*.wasm
+metadata.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

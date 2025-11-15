@@ -1,0 +1,283 @@
+[
+  {
+    "inputs": [],
+    "name": "InvalidKeyCID",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidMessageCID",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidMessageHash",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidTimestamp",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MessageNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SenderIsRecipient",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "messageId",
+        "type": "uint64"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "unlockTimestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "MessageStored",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "messageId",
+        "type": "uint64"
+      }
+    ],
+    "name": "getMessage",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "encryptedKeyCid",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "encryptedMessageCid",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "messageHash",
+            "type": "string"
+          },
+          {
+            "internalType": "uint64",
+            "name": "unlockTimestamp",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "recipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "createdAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct FutureProof.MessageMetadata",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMessageCount",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
+    ],
+    "name": "getReceivedMessages",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "encryptedKeyCid",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "encryptedMessageCid",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "messageHash",
+            "type": "string"
+          },
+          {
+            "internalType": "uint64",
+            "name": "unlockTimestamp",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "recipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "createdAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct FutureProof.MessageMetadata[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "getSentMessages",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "encryptedKeyCid",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "encryptedMessageCid",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "messageHash",
+            "type": "string"
+          },
+          {
+            "internalType": "uint64",
+            "name": "unlockTimestamp",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "recipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "createdAt",
+            "type": "uint64"
+          }
+        ],
+        "internalType": "struct FutureProof.MessageMetadata[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "encryptedKeyCid",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "encryptedMessageCid",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "messageHash",
+        "type": "string"
+      },
+      {
+        "internalType": "uint64",
+        "name": "unlockTimestamp",
+        "type": "uint64"
+      },
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
+    ],
+    "name": "storeMessage",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "messageId",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

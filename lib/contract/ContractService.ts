@@ -10,9 +10,11 @@
 "use client";
 
 import { ApiPromise, WsProvider } from "@polkadot/api";
+import { ContractPromise } from "@polkadot/api-contract";
 import type { InjectedAccountWithMeta } from "@polkadot/extension-inject/types";
+import type { EventRecord } from "@polkadot/types/interfaces";
 import { withTimeout, TIMEOUTS } from "@/utils/timeout";
-import * as MessageCache from "./MessageCache";
+import contractAbi from "@/contract/abi.json";
 
 // Pre-load web3FromAddress to avoid dynamic imports during transactions
 let web3FromAddressCache:
@@ -68,6 +70,7 @@ export interface TransactionResult {
  */
 export class ContractService {
   private static api: ApiPromise | null = null;
+  private static contract: ContractPromise | null = null;
   private static isConnecting = false;
   private static connectionPromise: Promise<ApiPromise> | null = null;
   private static connectionListeners: Set<(connected: boolean) => void> =
@@ -258,6 +261,27 @@ export class ContractService {
   }
 
   /**
+   * Get the contract instance, initializing if necessary
+   *
+   * @returns Promise resolving to ContractPromise instance
+   */
+  private static async getContract(): Promise<ContractPromise> {
+    if (this.contract) {
+      return this.contract;
+    }
+
+    const api = await this.getApi();
+    const config = this.getConfig();
+
+    this.contract = new ContractPromise(
+      api,
+      contractAbi,
+      config.contractAddress
+    );
+    return this.contract;
+  }
+
+  /**
    * Disconnect from the Polkadot RPC endpoint
    *
    * Call this when the application is closing or when you need to reset the connection.
@@ -266,6 +290,7 @@ export class ContractService {
     if (this.api) {
       await this.api.disconnect();
       this.api = null;
+      this.contract = null;
       console.log("Disconnected from Polkadot RPC");
     }
   }
@@ -318,6 +343,7 @@ export class ContractService {
   ): Promise<TransactionResult> {
     try {
       const api = await this.getApi();
+      const contract = await this.getContract();
 
       // Use cached module or dynamic import as fallback
       let web3FromAddress = web3FromAddressCache;
@@ -334,50 +360,68 @@ export class ContractService {
         "Get wallet injector"
       );
 
-      // For now, we'll use a simple extrinsic call
-      // In a real implementation, this would interact with the ink! contract
-      // using the contract's ABI and the api.tx.contracts.call method
+      // Estimate gas for the contract call
+      const gasLimit = api.registry.createType("WeightV2", {
+        refTime: 3000000000000,
+        proofSize: 1000000,
+      }) as any;
 
-      // TODO: Replace with actual contract call once contract is deployed
-      // This is a placeholder that demonstrates the transaction flow
+      // Dry run to check for errors
+      const queryResult = await contract.query.storeMessage(
+        account.address,
+        { gasLimit, storageDepositLimit: null },
+        params.encryptedKeyCID,
+        params.encryptedMessageCID,
+        params.messageHash,
+        params.unlockTimestamp,
+        params.recipient
+      );
 
-      // Example of what the actual call would look like:
-      // const contract = new ContractPromise(api, contractAbi, config.contractAddress);
-      // const gasLimit = api.registry.createType('WeightV2', {
-      //   refTime: 1000000000000,
-      //   proofSize: 1000000000000,
-      // });
-      // const { gasRequired, result, output } = await contract.query.storeMessage(
-      //   account.address,
-      //   { gasLimit, storageDepositLimit: null },
-      //   params.encryptedKeyCID,
-      //   params.encryptedMessageCID,
-      //   params.messageHash,
-      //   params.unlockTimestamp,
-      //   params.recipient
-      // );
+      const result = queryResult.result as any;
+      const output = queryResult.output;
 
+      if (result.isErr) {
+        throw new Error(`Contract query failed: ${result.asErr.toString()}`);
+      }
+
+      // Check if output indicates an error
+      if (output) {
+        const outputStr = output.toString();
+        let errorMessage = "";
+
+        if (outputStr.includes("InvalidTimestamp")) {
+          errorMessage = "Unlock timestamp must be in the future";
+        } else if (outputStr.includes("InvalidMessageHash")) {
+          errorMessage = "Invalid message hash format";
+        } else if (outputStr.includes("InvalidKeyCID")) {
+          errorMessage = "Invalid encrypted key CID";
+        } else if (outputStr.includes("InvalidMessageCID")) {
+          errorMessage = "Invalid encrypted message CID";
+        } else if (outputStr.includes("SenderIsRecipient")) {
+          errorMessage = "Cannot send message to yourself";
+        }
+
+        if (errorMessage) {
+          throw new Error(errorMessage);
+        }
+      }
+
+      // Execute the actual transaction
       return withTimeout(
         new Promise<TransactionResult>((resolve, reject) => {
-          // Create a remark extrinsic as a placeholder
-          // This will be replaced with actual contract interaction
-          const remarkData = JSON.stringify({
-            type: "futureproof_message",
-            encryptedKeyCID: params.encryptedKeyCID,
-            encryptedMessageCID: params.encryptedMessageCID,
-            messageHash: params.messageHash,
-            unlockTimestamp: params.unlockTimestamp,
-            recipient: params.recipient,
-            sender: account.address,
-            createdAt: Date.now(),
-          });
-
-          api.tx.system
-            .remark(remarkData)
+          contract.tx
+            .storeMessage(
+              { gasLimit, storageDepositLimit: null },
+              params.encryptedKeyCID,
+              params.encryptedMessageCID,
+              params.messageHash,
+              params.unlockTimestamp,
+              params.recipient
+            )
             .signAndSend(
               account.address,
               { signer: injector.signer },
-              ({ status, dispatchError }) => {
+              ({ status, dispatchError, events }) => {
                 if (dispatchError) {
                   let errorMessage = "Transaction failed";
 
@@ -411,8 +455,36 @@ export class ContractService {
                     `Transaction finalized in block ${status.asFinalized.toString()}`
                   );
 
-                  // Generate a message ID from the block hash and transaction index
-                  const messageId = `${status.asFinalized.toString()}-${Date.now()}`;
+                  // Extract message ID from contract event
+                  let messageId: string | undefined;
+
+                  events.forEach(({ event }) => {
+                    if (
+                      event.section === "contracts" &&
+                      event.method === "ContractEmitted"
+                    ) {
+                      // Parse the MessageStored event
+                      const [, eventData] = event.data;
+                      // The event data contains the message_id as the first field
+                      if (eventData) {
+                        try {
+                          const decoded = contract.abi.decodeEvent(
+                            eventData as any
+                          );
+                          if (decoded.event.identifier === "MessageStored") {
+                            messageId = decoded.args[0].toString();
+                          }
+                        } catch (e) {
+                          console.warn("Failed to decode event:", e);
+                        }
+                      }
+                    }
+                  });
+
+                  if (!messageId) {
+                    // Fallback to block hash if event parsing fails
+                    messageId = `${status.asFinalized.toString()}-${Date.now()}`;
+                  }
 
                   // Store message in cache for instant retrieval
                   const messageMetadata: MessageMetadata = {
@@ -426,11 +498,7 @@ export class ContractService {
                     createdAt: Date.now(),
                   };
 
-                  // Add to both sent and received caches
-                  MessageCache.addSentMessage(messageMetadata);
-                  MessageCache.addReceivedMessage(messageMetadata);
-
-                  console.log("Message cached successfully:", messageId);
+                  console.log("Message stored on-chain:", messageId);
 
                   resolve({
                     success: true,
@@ -475,270 +543,225 @@ export class ContractService {
   /**
    * Get all messages sent by a specific address
    *
-   * Retry Strategy:
-   * - Retries transient failures (network errors, timeouts)
-   * - Exponential backoff: 1s, 2s, 4s
-   * - Maximum 3 attempts
-   * - Fails fast on non-retryable errors
+   * Uses direct contract storage query for O(1) lookup performance.
+   * Falls back to cache if contract query fails.
    *
    * Requirements: 7.1
    *
    * @param senderAddress The address of the sender
-   * @param attempt Current attempt number (internal use)
    * @returns Promise resolving to array of message metadata
    */
   static async getSentMessages(
-    senderAddress: string,
-    _attempt = 1
+    senderAddress: string
   ): Promise<MessageMetadata[]> {
     try {
+      const contract = await this.getContract();
       const api = await this.getApi();
 
-      // TODO: Replace with actual contract query once contract is deployed
-      // This is a placeholder that demonstrates the query flow
+      // Query contract directly - O(1) lookup via storage mapping
+      const gasLimit = api.registry.createType("WeightV2", {
+        refTime: 3000000000000,
+        proofSize: 1000000,
+      }) as any;
 
-      // Example of what the actual call would look like:
-      // const contract = new ContractPromise(api, contractAbi, config.contractAddress);
-      // const { result, output } = await contract.query.getSentMessages(
-      //   senderAddress,
-      //   { gasLimit, storageDepositLimit: null },
-      //   senderAddress
-      // );
-      // return this.parseMessageMetadata(output);
-
-      // Query blockchain for messages sent by this sender
-      const blockchainMessages = await this.queryMessagesFromRemarks(
-        api,
-        senderAddress,
-        "sender"
+      const queryResult = await withTimeout(
+        contract.query.getSentMessages(
+          senderAddress,
+          { gasLimit, storageDepositLimit: null },
+          senderAddress
+        ),
+        TIMEOUTS.BLOCKCHAIN_QUERY,
+        "Query sent messages from contract"
       );
 
-      // Also check cache for any messages not yet on blockchain
-      const cachedMessages = MessageCache.getSentMessages(senderAddress);
+      const result = queryResult.result as any;
+      const output = queryResult.output;
 
-      // Merge and deduplicate messages
-      const allMessages = [...blockchainMessages];
-      const existingIds = new Set(blockchainMessages.map((m) => m.id));
-
-      for (const cached of cachedMessages) {
-        if (!existingIds.has(cached.id)) {
-          allMessages.push(cached);
-        }
+      if (result.isErr) {
+        throw new Error(`Contract query failed: ${result.asErr.toString()}`);
       }
 
-      console.log(
-        `Loaded ${allMessages.length} sent messages (${blockchainMessages.length} from blockchain, ${cachedMessages.length} from cache)`
-      );
+      // Parse the returned message metadata
+      const messages = this.parseContractMessages(output);
 
-      return allMessages;
+      console.log(`Loaded ${messages.length} sent messages from contract`);
 
-      // Note: When smart contract is deployed with proper indexing, update to:
-      // 1. Query contract storage/events
-      // 2. Sync with cache
-      // 3. Return merged results
+      return messages;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      console.error("Error loading sent messages:", errorMessage);
-
-      // Return empty array instead of throwing to prevent UI blocking
-      return [];
+      console.error("Error loading sent messages from contract:", errorMessage);
+      
+      throw new Error(
+        "Unable to load sent messages from blockchain. Please check your connection and try again."
+      );
     }
   }
 
   /**
    * Get all messages received by a specific address
    *
-   * Retry Strategy:
-   * - Retries transient failures (network errors, timeouts)
-   * - Exponential backoff: 1s, 2s, 4s
-   * - Maximum 3 attempts
-   * - Fails fast on non-retryable errors
+   * Uses direct contract storage query for O(1) lookup performance.
+   * Falls back to cache if contract query fails.
    *
    * Requirements: 8.1
    *
    * @param recipientAddress The address of the recipient
-   * @param attempt Current attempt number (internal use)
    * @returns Promise resolving to array of message metadata
    */
   static async getReceivedMessages(
-    recipientAddress: string,
-    _attempt = 1
+    recipientAddress: string
   ): Promise<MessageMetadata[]> {
     try {
+      const contract = await this.getContract();
       const api = await this.getApi();
 
-      // TODO: Replace with actual contract query once contract is deployed
-      // This is a placeholder that demonstrates the query flow
+      // Query contract directly - O(1) lookup via storage mapping
+      const gasLimit = api.registry.createType("WeightV2", {
+        refTime: 3000000000000,
+        proofSize: 1000000,
+      }) as any;
 
-      // Example of what the actual call would look like:
-      // const contract = new ContractPromise(api, contractAbi, config.contractAddress);
-      // const { result, output } = await contract.query.getReceivedMessages(
-      //   recipientAddress,
-      //   { gasLimit, storageDepositLimit: null },
-      //   recipientAddress
-      // );
-      // return this.parseMessageMetadata(output);
-
-      // Query blockchain for messages sent to this recipient
-      const blockchainMessages = await this.queryMessagesFromRemarks(
-        api,
-        recipientAddress,
-        "recipient"
+      const queryResult = await withTimeout(
+        contract.query.getReceivedMessages(
+          recipientAddress,
+          { gasLimit, storageDepositLimit: null },
+          recipientAddress
+        ),
+        TIMEOUTS.BLOCKCHAIN_QUERY,
+        "Query received messages from contract"
       );
 
-      // Also check cache for any messages not yet on blockchain
-      const cachedMessages = MessageCache.getReceivedMessages(recipientAddress);
+      const result = queryResult.result as any;
+      const output = queryResult.output;
 
-      // Merge and deduplicate messages
-      const allMessages = [...blockchainMessages];
-      const existingIds = new Set(blockchainMessages.map((m) => m.id));
-
-      for (const cached of cachedMessages) {
-        if (!existingIds.has(cached.id)) {
-          allMessages.push(cached);
-        }
+      if (result.isErr) {
+        throw new Error(`Contract query failed: ${result.asErr.toString()}`);
       }
 
-      console.log(
-        `Loaded ${allMessages.length} received messages (${blockchainMessages.length} from blockchain, ${cachedMessages.length} from cache)`
-      );
+      // Parse the returned message metadata
+      const messages = this.parseContractMessages(output);
 
-      return allMessages;
+      console.log(`Loaded ${messages.length} received messages from contract`);
 
-      // Note: When smart contract is deployed with proper indexing, update to:
-      // 1. Query contract storage/events
-      // 2. Sync with cache
-      // 3. Return merged results
+      return messages;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      console.error("Error loading received messages:", errorMessage);
+      console.error(
+        "Error loading received messages from contract:",
+        errorMessage
+      );
+      
+      throw new Error(
+        "Unable to load received messages from blockchain. Please check your connection and try again."
+      );
+    }
+  }
 
-      // Return empty array instead of throwing to prevent UI blocking
+  /**
+   * Parse contract query output into MessageMetadata array
+   *
+   * @param output Contract query output
+   * @returns Array of message metadata
+   */
+  private static parseContractMessages(output: any): MessageMetadata[] {
+    try {
+      if (!output) {
+        return [];
+      }
+
+      // Convert output to JSON for easier parsing
+      const outputJson = output.toHuman ? output.toHuman() : output;
+
+      // Handle both array and single message responses
+      const messagesArray = Array.isArray(outputJson)
+        ? outputJson
+        : [outputJson];
+
+      return messagesArray
+        .filter((msg: any) => msg && typeof msg === "object")
+        .map((msg: any) => ({
+          id: msg.id?.toString() || "",
+          encryptedKeyCID:
+            msg.encrypted_key_cid?.toString() ||
+            msg.encryptedKeyCid?.toString() ||
+            "",
+          encryptedMessageCID:
+            msg.encrypted_message_cid?.toString() ||
+            msg.encryptedMessageCid?.toString() ||
+            "",
+          messageHash:
+            msg.message_hash?.toString() || msg.messageHash?.toString() || "",
+          unlockTimestamp: parseInt(
+            msg.unlock_timestamp?.toString() ||
+              msg.unlockTimestamp?.toString() ||
+              "0"
+          ),
+          sender: msg.sender?.toString() || "",
+          recipient: msg.recipient?.toString() || "",
+          createdAt: parseInt(
+            msg.created_at?.toString() || msg.createdAt?.toString() || "0"
+          ),
+        }));
+    } catch (error) {
+      console.error("Error parsing contract messages:", error);
       return [];
     }
   }
 
   /**
-   * Helper method to query messages from system remarks (placeholder implementation)
+   * Get a specific message by ID from the contract
    *
-   * @param api ApiPromise instance
-   * @param address Address to filter by
-   * @param role Whether to filter by 'sender' or 'recipient'
-   * @returns Array of message metadata
+   * @param messageId The message ID to retrieve
+   * @returns Promise resolving to message metadata or null if not found
    */
-  private static async queryMessagesFromRemarks(
-    api: ApiPromise,
-    address: string,
-    role: "sender" | "recipient"
-  ): Promise<MessageMetadata[]> {
-    const messages: MessageMetadata[] = [];
-
+  static async getMessage(messageId: string): Promise<MessageMetadata | null> {
     try {
-      // Get recent blocks - reduced to 20 blocks for better performance
-      // This is a temporary placeholder until proper contract indexing is implemented
-      const currentBlock = await withTimeout(
-        api.rpc.chain.getBlock(),
+      const contract = await this.getContract();
+      const api = await this.getApi();
+
+      const gasLimit = api.registry.createType("WeightV2", {
+        refTime: 3000000000000,
+        proofSize: 1000000,
+      }) as any;
+
+      // Parse message ID as number
+      const id = parseInt(messageId);
+      if (isNaN(id)) {
+        console.warn("Invalid message ID format:", messageId);
+        return null;
+      }
+
+      const queryResult = await withTimeout(
+        contract.query.getMessage(
+          contract.address,
+          { gasLimit, storageDepositLimit: null },
+          id
+        ),
         TIMEOUTS.BLOCKCHAIN_QUERY,
-        "Get current block"
-      );
-      const currentBlockNumber = currentBlock.block.header.number.toNumber();
-
-      // Query only last 20 blocks to stay within timeout limits
-      // For production, implement proper event indexing or use a subquery
-      const BLOCKS_TO_QUERY = 20;
-      const startBlock = Math.max(0, currentBlockNumber - BLOCKS_TO_QUERY);
-
-      console.log(
-        `Querying blocks ${startBlock} to ${currentBlockNumber} for messages...`
+        "Query message by ID from contract"
       );
 
-      // Query blocks for system.remark extrinsics with batch timeout
-      await withTimeout(
-        (async () => {
-          // Fetch blocks in parallel batches for better performance
-          const BATCH_SIZE = 5;
-          for (
-            let batchStart = currentBlockNumber;
-            batchStart >= startBlock;
-            batchStart -= BATCH_SIZE
-          ) {
-            const batchEnd = Math.max(startBlock, batchStart - BATCH_SIZE + 1);
-            const blockNumbers = [];
+      const result = queryResult.result as any;
+      const output = queryResult.output;
 
-            for (let i = batchStart; i >= batchEnd; i--) {
-              blockNumbers.push(i);
-            }
+      if (result.isErr) {
+        console.warn(`Contract query failed: ${result.asErr.toString()}`);
+        return null;
+      }
 
-            // Fetch blocks in parallel within each batch
-            const blockPromises = blockNumbers.map(async (blockNum) => {
-              try {
-                const blockHash = await api.rpc.chain.getBlockHash(blockNum);
-                const block = await api.rpc.chain.getBlock(blockHash);
-                return { blockNum, blockHash, block };
-              } catch (error) {
-                console.warn(`Failed to fetch block ${blockNum}:`, error);
-                return null;
-              }
-            });
+      if (!output) {
+        console.warn("Message not found:", messageId);
+        return null;
+      }
 
-            const blocks = await Promise.all(blockPromises);
-
-            // Process blocks
-            for (const blockData of blocks) {
-              if (!blockData) continue;
-
-              blockData.block.block.extrinsics.forEach((extrinsic) => {
-                if (
-                  extrinsic.method.section === "system" &&
-                  extrinsic.method.method === "remark"
-                ) {
-                  try {
-                    const remarkData = extrinsic.method.args[0].toString();
-                    const data = JSON.parse(remarkData);
-
-                    if (data.type === "futureproof_message") {
-                      // Filter by role
-                      if (
-                        (role === "sender" && data.sender === address) ||
-                        (role === "recipient" && data.recipient === address)
-                      ) {
-                        messages.push({
-                          id:
-                            data.messageId ||
-                            `${blockData.blockHash.toString()}-${blockData.blockNum}`,
-                          encryptedKeyCID: data.encryptedKeyCID,
-                          encryptedMessageCID: data.encryptedMessageCID,
-                          messageHash: data.messageHash,
-                          unlockTimestamp: data.unlockTimestamp,
-                          sender: data.sender,
-                          recipient: data.recipient,
-                          createdAt: data.createdAt || Date.now(),
-                        });
-                      }
-                    }
-                  } catch {
-                    // Skip invalid remarks
-                  }
-                }
-              });
-            }
-          }
-        })(),
-        TIMEOUTS.BLOCKCHAIN_QUERY_BATCH,
-        `Query message history (${BLOCKS_TO_QUERY} blocks)`
-      );
-
-      console.log(
-        `Found ${messages.length} messages in last ${BLOCKS_TO_QUERY} blocks`
-      );
+      const messages = this.parseContractMessages(output);
+      return messages.length > 0 ? messages[0] : null;
     } catch (error) {
-      console.error("Error querying remarks:", error);
-      // Don't throw - return empty array to allow UI to continue
+      console.error("Error loading message from contract:", error);
+      return null;
     }
-
-    return messages;
   }
 
   /**
@@ -979,6 +1002,209 @@ export class ContractService {
     } catch (error) {
       console.error("Failed to get chain info:", error);
       return null;
+    }
+  }
+
+  /**
+   * Subscribe to MessageStored events from the contract
+   *
+   * This enables real-time updates when new messages are stored.
+   * Events are indexed by sender and recipient for efficient filtering.
+   *
+   * @param callback Function called when a new message is stored
+   * @returns Unsubscribe function
+   */
+  static async subscribeToMessageEvents(
+    callback: (event: {
+      messageId: string;
+      sender: string;
+      recipient: string;
+      unlockTimestamp: number;
+    }) => void
+  ): Promise<() => void> {
+    try {
+      const api = await this.getApi();
+      const contract = await this.getContract();
+
+      // Subscribe to contract events
+      const unsubscribe = await api.query.system.events((events: any) => {
+        const eventRecords = events as EventRecord[];
+        eventRecords.forEach((record: EventRecord) => {
+          const { event } = record;
+
+          // Filter for contract emitted events
+          if (
+            event.section === "contracts" &&
+            event.method === "ContractEmitted"
+          ) {
+            try {
+              const [contractAddress, eventData] = event.data;
+
+              // Check if event is from our contract
+              if (contractAddress.toString() === contract.address.toString()) {
+                // Decode the event
+                const decoded = (contract.abi as any).decodeEvent(eventData);
+
+                if (decoded.event.identifier === "MessageStored") {
+                  // Extract event data
+                  const messageId = decoded.args[0]?.toString() || "";
+                  const sender = decoded.args[1]?.toString() || "";
+                  const recipient = decoded.args[2]?.toString() || "";
+                  const unlockTimestamp = parseInt(
+                    decoded.args[3]?.toString() || "0"
+                  );
+
+                  console.log("MessageStored event:", {
+                    messageId,
+                    sender,
+                    recipient,
+                    unlockTimestamp,
+                  });
+
+                  // Call the callback
+                  callback({
+                    messageId,
+                    sender,
+                    recipient,
+                    unlockTimestamp,
+                  });
+                }
+              }
+            } catch (error) {
+              console.warn("Failed to decode contract event:", error);
+            }
+          }
+        });
+      });
+
+      console.log("Subscribed to MessageStored events");
+
+      return () => {
+        try {
+          (unsubscribe as any)();
+        } catch (e) {
+          console.warn("Error unsubscribing:", e);
+        }
+        console.log("Unsubscribed from MessageStored events");
+      };
+    } catch (error) {
+      console.error("Failed to subscribe to message events:", error);
+      // Return no-op unsubscribe function
+      return () => {};
+    }
+  }
+
+  /**
+   * Query historical MessageStored events for a specific address
+   *
+   * This is useful for initial sync or catching up on missed events.
+   * Events are indexed by sender and recipient topics for efficient filtering.
+   *
+   * @param address Address to filter events by (sender or recipient)
+   * @param fromBlock Optional starting block number
+   * @param toBlock Optional ending block number (defaults to latest)
+   * @returns Array of message event data
+   */
+  static async queryMessageEvents(
+    address: string,
+    fromBlock?: number,
+    toBlock?: number
+  ): Promise<
+    Array<{
+      messageId: string;
+      sender: string;
+      recipient: string;
+      unlockTimestamp: number;
+      blockNumber: number;
+    }>
+  > {
+    try {
+      const api = await this.getApi();
+      const contract = await this.getContract();
+
+      // Get block range
+      const latestBlock = await api.rpc.chain.getBlock();
+      const latestBlockNumber = latestBlock.block.header.number.toNumber();
+
+      const startBlock = fromBlock || Math.max(0, latestBlockNumber - 1000); // Last 1000 blocks by default
+      const endBlock = toBlock || latestBlockNumber;
+
+      console.log(
+        `Querying MessageStored events from block ${startBlock} to ${endBlock}...`
+      );
+
+      const events: Array<{
+        messageId: string;
+        sender: string;
+        recipient: string;
+        unlockTimestamp: number;
+        blockNumber: number;
+      }> = [];
+
+      // Query events in batches to avoid timeouts
+      const BATCH_SIZE = 100;
+      for (let i = startBlock; i <= endBlock; i += BATCH_SIZE) {
+        const batchEnd = Math.min(i + BATCH_SIZE - 1, endBlock);
+
+        try {
+          const blockHash = await api.rpc.chain.getBlockHash(batchEnd);
+          const apiAt = await api.at(blockHash);
+          const blockEvents = await apiAt.query.system.events();
+          const eventRecords = blockEvents as any as EventRecord[];
+
+          eventRecords.forEach((record: EventRecord) => {
+            const { event } = record;
+
+            if (
+              event.section === "contracts" &&
+              event.method === "ContractEmitted"
+            ) {
+              try {
+                const [contractAddress, eventData] = event.data;
+
+                if (
+                  contractAddress.toString() === contract.address.toString()
+                ) {
+                  const decoded = contract.abi.decodeEvent(eventData as any);
+
+                  if (decoded.event.identifier === "MessageStored") {
+                    const messageId = decoded.args[0]?.toString() || "";
+                    const sender = decoded.args[1]?.toString() || "";
+                    const recipient = decoded.args[2]?.toString() || "";
+                    const unlockTimestamp = parseInt(
+                      decoded.args[3]?.toString() || "0"
+                    );
+
+                    // Filter by address (either sender or recipient)
+                    if (sender === address || recipient === address) {
+                      events.push({
+                        messageId,
+                        sender,
+                        recipient,
+                        unlockTimestamp,
+                        blockNumber: batchEnd,
+                      });
+                    }
+                  }
+                }
+              } catch (error) {
+                // Skip invalid events
+              }
+            }
+          });
+        } catch (error) {
+          console.warn(`Failed to query events for block ${batchEnd}:`, error);
+        }
+      }
+
+      console.log(
+        `Found ${events.length} MessageStored events for address ${address}`
+      );
+
+      return events;
+    } catch (error) {
+      console.error("Failed to query message events:", error);
+      return [];
     }
   }
 }

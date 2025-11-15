@@ -51,7 +51,7 @@ Backoff: 1s, 2s, 4s (±30% jitter)
 - Jitter prevents thundering herd problem
 - Comprehensive error type detection
 - Well-documented retry strategy
-- Fallback to Pinata (when available)
+- Retry logic with exponential backoff
 
 ---
 
@@ -123,7 +123,6 @@ Backoff: 1s, 2s (exponential)
 | **Fail-Fast** | 4xx except 429 | 4xx except 429 | ✅ Perfect |
 | **Timeout Integration** | All operations | Recommended | ✅ Excellent |
 | **Documentation** | Comprehensive | Recommended | ✅ Excellent |
-| **Fallback Providers** | Pinata (IPFS) | Optional | ✅ Good |
 
 ---
 
@@ -143,10 +142,8 @@ Wait: ~2s (1.4-2.6s with jitter)
 Attempt 3: Retry
   ↓ (fails - timeout)
 Wait: ~4s (2.8-5.2s with jitter)
-  ↓
-Fallback to Pinata (same retry logic)
-  ↓ (success)
-Return: { cid, size, provider: "pinata" }
+  ↓ (fails after 3 attempts)
+Throw: Upload failed error
 ```
 
 ### Blockchain Query Flow

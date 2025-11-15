@@ -1,0 +1,11 @@
+[profile.default]
+src = "contracts"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.20"
+
+[profile.default.resolc]
+resolc_compile = true
+
+[rpc_endpoints]
+passet_hub = "wss://testnet-passet-hub.polkadot.io"

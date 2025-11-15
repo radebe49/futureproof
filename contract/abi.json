@@ -1,0 +1,707 @@
+{
+  "source": {
+    "hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "language": "ink! 5.0.0",
+    "compiler": "rustc 1.70.0",
+    "build_info": {
+      "build_mode": "Release",
+      "cargo_contract_version": "4.0.0",
+      "rust_toolchain": "stable",
+      "wasm_opt_settings": {
+        "keep_debug_symbols": false,
+        "optimization_passes": "Z"
+      }
+    }
+  },
+  "contract": {
+    "name": "futureproof",
+    "version": "0.1.0",
+    "authors": ["FutureProof Team"]
+  },
+  "spec": {
+    "constructors": [
+      {
+        "args": [],
+        "default": false,
+        "docs": ["Constructor that initializes the contract"],
+        "label": "new",
+        "payable": false,
+        "returnType": {
+          "displayName": ["ink_primitives", "ConstructorResult"],
+          "type": 0
+        },
+        "selector": "0x9bae9d5e"
+      }
+    ],
+    "docs": [],
+    "environment": {
+      "accountId": {
+        "displayName": ["AccountId"],
+        "type": 5
+      },
+      "balance": {
+        "displayName": ["Balance"],
+        "type": 10
+      },
+      "blockNumber": {
+        "displayName": ["BlockNumber"],
+        "type": 3
+      },
+      "chainExtension": {
+        "displayName": ["ChainExtension"],
+        "type": 11
+      },
+      "hash": {
+        "displayName": ["Hash"],
+        "type": 12
+      },
+      "maxEventTopics": 4,
+      "timestamp": {
+        "displayName": ["Timestamp"],
+        "type": 8
+      }
+    },
+    "events": [
+      {
+        "args": [
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "message_id",
+            "type": {
+              "displayName": ["u64"],
+              "type": 8
+            }
+          },
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "sender",
+            "type": {
+              "displayName": ["AccountId"],
+              "type": 5
+            }
+          },
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "recipient",
+            "type": {
+              "displayName": ["AccountId"],
+              "type": 5
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "unlock_timestamp",
+            "type": {
+              "displayName": ["u64"],
+              "type": 8
+            }
+          }
+        ],
+        "docs": ["Events emitted by the contract"],
+        "label": "MessageStored"
+      }
+    ],
+    "lang_error": {
+      "displayName": ["ink", "LangError"],
+      "type": 1
+    },
+    "messages": [
+      {
+        "args": [
+          {
+            "label": "encrypted_key_cid",
+            "type": {
+              "displayName": ["String"],
+              "type": 6
+            }
+          },
+          {
+            "label": "encrypted_message_cid",
+            "type": {
+              "displayName": ["String"],
+              "type": 6
+            }
+          },
+          {
+            "label": "message_hash",
+            "type": {
+              "displayName": ["String"],
+              "type": 6
+            }
+          },
+          {
+            "label": "unlock_timestamp",
+            "type": {
+              "displayName": ["u64"],
+              "type": 8
+            }
+          },
+          {
+            "label": "recipient",
+            "type": {
+              "displayName": ["AccountId"],
+              "type": 5
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          "Store a new message on the blockchain",
+          "",
+          "# Arguments",
+          "* `encrypted_key_cid` - IPFS CID of the encrypted AES key",
+          "* `encrypted_message_cid` - IPFS CID of the encrypted message blob",
+          "* `message_hash` - SHA-256 hash of the encrypted message",
+          "* `unlock_timestamp` - Unix timestamp when the message can be unlocked",
+          "* `recipient` - Address of the message recipient",
+          "",
+          "# Returns",
+          "* `Result<u64>` - The message ID if successful, or an error"
+        ],
+        "label": "store_message",
+        "mutates": true,
+        "payable": false,
+        "returnType": {
+          "displayName": ["ink", "MessageResult"],
+          "type": 2
+        },
+        "selector": "0x8c97db39"
+      },
+      {
+        "args": [
+          {
+            "label": "sender",
+            "type": {
+              "displayName": ["AccountId"],
+              "type": 5
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          "Get all messages sent by a specific address"
+        ],
+        "label": "get_sent_messages",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": ["ink", "MessageResult"],
+          "type": 7
+        },
+        "selector": "0x5c1d4325"
+      },
+      {
+        "args": [
+          {
+            "label": "recipient",
+            "type": {
+              "displayName": ["AccountId"],
+              "type": 5
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          "Get all messages received by a specific address"
+        ],
+        "label": "get_received_messages",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": ["ink", "MessageResult"],
+          "type": 7
+        },
+        "selector": "0x9c3d1e7f"
+      },
+      {
+        "args": [
+          {
+            "label": "message_id",
+            "type": {
+              "displayName": ["u64"],
+              "type": 8
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          "Get a specific message by ID"
+        ],
+        "label": "get_message",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": ["ink", "MessageResult"],
+          "type": 4
+        },
+        "selector": "0xc2b1a9e6"
+      },
+      {
+        "args": [],
+        "default": false,
+        "docs": [
+          "Get the total number of messages stored"
+        ],
+        "label": "get_message_count",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": ["ink", "MessageResult"],
+          "type": 9
+        },
+        "selector": "0x2f865bd9"
+      }
+    ]
+  },
+  "storage": {
+    "root": {
+      "layout": {
+        "struct": {
+          "fields": [
+            {
+              "layout": {
+                "leaf": {
+                  "key": "0x00000000",
+                  "ty": 8
+                }
+              },
+              "name": "message_count"
+            },
+            {
+              "layout": {
+                "root": {
+                  "layout": {
+                    "leaf": {
+                      "key": "0x00000001",
+                      "ty": 3
+                    }
+                  },
+                  "root_key": "0x00000001"
+                }
+              },
+              "name": "messages"
+            },
+            {
+              "layout": {
+                "root": {
+                  "layout": {
+                    "leaf": {
+                      "key": "0x00000002",
+                      "ty": 7
+                    }
+                  },
+                  "root_key": "0x00000002"
+                }
+              },
+              "name": "sent_messages"
+            },
+            {
+              "layout": {
+                "root": {
+                  "layout": {
+                    "leaf": {
+                      "key": "0x00000003",
+                      "ty": 7
+                    }
+                  },
+                  "root_key": "0x00000003"
+                }
+              },
+              "name": "received_messages"
+            }
+          ],
+          "name": "Futureproof"
+        }
+      },
+      "root_key": "0x00000000"
+    }
+  },
+  "types": [
+    {
+      "id": 0,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": {
+                      "def": {
+                        "tuple": []
+                      }
+                    }
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 1
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": {
+              "def": {
+                "tuple": []
+              }
+            }
+          },
+          {
+            "name": "E",
+            "type": 1
+          }
+        ],
+        "path": ["Result"]
+      }
+    },
+    {
+      "id": 1,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "index": 0,
+                "name": "CouldNotReadInput"
+              }
+            ]
+          }
+        },
+        "path": ["ink_primitives", "LangError"]
+      }
+    },
+    {
+      "id": 2,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": {
+                      "def": {
+                        "variant": {
+                          "variants": [
+                            {
+                              "fields": [
+                                {
+                                  "type": 8
+                                }
+                              ],
+                              "index": 0,
+                              "name": "Ok"
+                            },
+                            {
+                              "fields": [
+                                {
+                                  "type": 13
+                                }
+                              ],
+                              "index": 1,
+                              "name": "Err"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 1
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "name": "encrypted_key_cid",
+                "type": 6,
+                "typeName": "String"
+              },
+              {
+                "name": "encrypted_message_cid",
+                "type": 6,
+                "typeName": "String"
+              },
+              {
+                "name": "message_hash",
+                "type": 6,
+                "typeName": "String"
+              },
+              {
+                "name": "unlock_timestamp",
+                "type": 8,
+                "typeName": "u64"
+              },
+              {
+                "name": "sender",
+                "type": 5,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "recipient",
+                "type": 5,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "created_at",
+                "type": 8,
+                "typeName": "u64"
+              }
+            ]
+          }
+        },
+        "path": ["futureproof", "futureproof", "MessageMetadata"]
+      }
+    },
+    {
+      "id": 4,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": {
+                      "def": {
+                        "variant": {
+                          "variants": [
+                            {
+                              "fields": [
+                                {
+                                  "type": 3
+                                }
+                              ],
+                              "index": 0,
+                              "name": "Ok"
+                            },
+                            {
+                              "fields": [
+                                {
+                                  "type": 13
+                                }
+                              ],
+                              "index": 1,
+                              "name": "Err"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 1
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "type": {
+                  "def": {
+                    "array": {
+                      "len": 32,
+                      "type": 14
+                    }
+                  }
+                },
+                "typeName": "[u8; 32]"
+              }
+            ]
+          }
+        },
+        "path": ["ink_primitives", "types", "AccountId"]
+      }
+    },
+    {
+      "id": 6,
+      "type": {
+        "def": {
+          "primitive": "str"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": {
+        "def": {
+          "sequence": {
+            "type": 3
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": {
+        "def": {
+          "primitive": "u64"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 8
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 1
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": {
+        "def": {
+          "primitive": "u128"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": {
+        "def": {
+          "variant": {}
+        },
+        "path": ["ink_env", "types", "NoChainExtension"]
+      }
+    },
+    {
+      "id": 12,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "type": {
+                  "def": {
+                    "array": {
+                      "len": 32,
+                      "type": 14
+                    }
+                  }
+                },
+                "typeName": "[u8; 32]"
+              }
+            ]
+          }
+        },
+        "path": ["ink_primitives", "types", "Hash"]
+      }
+    },
+    {
+      "id": 13,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "index": 0,
+                "name": "InvalidTimestamp"
+              },
+              {
+                "index": 1,
+                "name": "InvalidMessageHash"
+              },
+              {
+                "index": 2,
+                "name": "InvalidKeyCID"
+              },
+              {
+                "index": 3,
+                "name": "InvalidMessageCID"
+              },
+              {
+                "index": 4,
+                "name": "SenderIsRecipient"
+              },
+              {
+                "index": 5,
+                "name": "MessageNotFound"
+              }
+            ]
+          }
+        },
+        "path": ["futureproof", "futureproof", "Error"]
+      }
+    },
+    {
+      "id": 14,
+      "type": {
+        "def": {
+          "primitive": "u8"
+        }
+      }
+    }
+  ],
+  "version": "5"
+}

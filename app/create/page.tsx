@@ -6,6 +6,8 @@ import { MediaUploader } from "@/components/media/MediaUploader";
 import { MediaPreview } from "@/components/media/MediaPreview";
 import { useWallet } from "@/lib/wallet/WalletProvider";
 import { MessageCreationService } from "@/lib/message";
+import { useStoracha } from "@/hooks/useStoracha";
+import { StorachaAuth } from "@/components/storage/StorachaAuth";
 import type { MediaFile } from "@/types/media";
 import type { MessageCreationProgress } from "@/lib/message";
 
@@ -24,6 +26,7 @@ type MediaSource = "record" | "upload" | null;
  */
 export default function CreateMessagePage() {
   const { address, isConnected, selectedAccount } = useWallet();
+  const { isReady: isStorachaReady } = useStoracha();
 
   // Form state
   const [recipientAddress, setRecipientAddress] = useState("");
@@ -214,6 +217,72 @@ export default function CreateMessagePage() {
           >
             Go to Home
           </a>
+        </div>
+      </div>
+    );
+  }
+
+  // Require Storacha authentication
+  if (!isStorachaReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 px-4 py-8">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-8">
+            <h1 className="mb-2 text-3xl font-bold text-gray-900">
+              Storage Setup Required
+            </h1>
+            <p className="text-gray-600">
+              Before creating messages, you need to connect to Storacha Network for decentralized storage.
+            </p>
+          </div>
+
+          <StorachaAuth 
+            onAuthComplete={() => {
+              // Force re-render by updating state
+              window.location.reload();
+            }}
+          />
+
+          <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-3 text-lg font-semibold text-gray-900">
+              Why Storacha?
+            </h3>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li className="flex items-start">
+                <svg className="mt-0.5 h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span><strong>Decentralized:</strong> Your encrypted messages are stored on IPFS, not on centralized servers</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="mt-0.5 h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span><strong>Secure:</strong> All encryption happens in your browser before upload</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="mt-0.5 h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span><strong>Reliable:</strong> 99.9% availability with Filecoin backup storage</span>
+              </li>
+              <li className="flex items-start">
+                <svg className="mt-0.5 h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span><strong>No API Keys:</strong> Simple email-based authentication</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mt-6 text-center">
+            <a
+              href="/"
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              ← Back to Home
+            </a>
+          </div>
         </div>
       </div>
     );

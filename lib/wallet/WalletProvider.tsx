@@ -211,7 +211,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
         }
 
         // Check if extension is available first (without timeout for detection)
-        if (typeof window !== "undefined" && !(window as any).injectedWeb3) {
+        if (typeof window !== "undefined" && !(window as Window & { injectedWeb3?: unknown }).injectedWeb3) {
           // Wait a bit for extension to inject
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
@@ -232,7 +232,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
         if (extensions.length === 0) {
           // Check if injectedWeb3 exists to give better error message
           const hasInjected =
-            typeof window !== "undefined" && (window as any).injectedWeb3;
+            typeof window !== "undefined" && (window as Window & { injectedWeb3?: unknown }).injectedWeb3;
           const errorMsg = hasInjected
             ? "Polkadot extension found but not authorized. Please authorize FutureProof in your Talisman settings."
             : "No Polkadot extension detected. Please install Talisman wallet extension and refresh the page.";
@@ -442,7 +442,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
       if (typeof window === "undefined") return false;
-      const injectedWeb3 = (window as any).injectedWeb3;
+      const injectedWeb3 = (window as Window & { injectedWeb3?: Record<string, unknown> }).injectedWeb3;
       return !!(injectedWeb3 && injectedWeb3["polkadot-js"]);
     } catch {
       return false;

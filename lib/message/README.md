@@ -78,7 +78,7 @@ The service handles various error scenarios:
 
 - Invalid parameters (validation before processing)
 - Encryption failures
-- IPFS upload failures (with Pinata fallback)
+- IPFS upload failures (with retry logic)
 - Blockchain transaction failures (with faucet guidance)
 - Network errors (with retry logic in underlying services)
 

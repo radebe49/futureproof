@@ -1,0 +1,15 @@
+{
+  "name": "futureproof-contract",
+  "version": "1.0.0",
+  "description": "FutureProof Solidity smart contract for Polkadot",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy:local": "hardhat run scripts/deploy.js",
+    "deploy:passet": "hardhat run scripts/deploy.js --network passetHub"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  }
+}

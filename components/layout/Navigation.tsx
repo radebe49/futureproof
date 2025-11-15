@@ -20,6 +20,7 @@ export function Navigation() {
     { href: "/", label: "Home" },
     { href: "/dashboard", label: "Dashboard", requiresWallet: true },
     { href: "/create", label: "Create Message", requiresWallet: true },
+    { href: "/settings", label: "Settings" },
   ];
 
   return (

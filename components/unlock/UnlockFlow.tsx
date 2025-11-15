@@ -9,11 +9,10 @@
 import { useState, useEffect } from "react";
 import { Message } from "@/types/contract";
 import { formatDistanceToNow } from "@/utils/dateUtils";
-import { UnlockService } from "@/lib/unlock";
 
 interface UnlockFlowProps {
   message: Message;
-  onUnlock: (message: Message, demoMode?: boolean) => Promise<void>;
+  onUnlock: (message: Message) => Promise<void>;
   onClose: () => void;
 }
 
@@ -22,20 +21,12 @@ export function UnlockFlow({ message, onUnlock, onClose }: UnlockFlowProps) {
   const [error, setError] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [isUnlockable, setIsUnlockable] = useState(false);
-  const [demoMode] = useState(UnlockService.isDemoModeEnabled());
 
   // Calculate time remaining until unlock
   useEffect(() => {
     const updateTimeRemaining = () => {
       const now = Date.now();
       const unlockTime = message.unlockTimestamp;
-
-      // In demo mode, always show as unlockable
-      if (demoMode) {
-        setTimeRemaining("Ready to unlock (Demo Mode)");
-        setIsUnlockable(true);
-        return;
-      }
 
       if (unlockTime <= now) {
         setTimeRemaining("Ready to unlock");
@@ -53,10 +44,10 @@ export function UnlockFlow({ message, onUnlock, onClose }: UnlockFlowProps) {
     const interval = setInterval(updateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [message.unlockTimestamp, demoMode]);
+  }, [message.unlockTimestamp]);
 
   const handleUnlock = async () => {
-    if (!isUnlockable && !demoMode) {
+    if (!isUnlockable) {
       setError("Message is not yet unlockable");
       return;
     }
@@ -65,7 +56,7 @@ export function UnlockFlow({ message, onUnlock, onClose }: UnlockFlowProps) {
     setError(null);
 
     try {
-      await onUnlock(message, demoMode);
+      await onUnlock(message);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to unlock message");
       setIsUnlocking(false);
@@ -85,29 +76,6 @@ export function UnlockFlow({ message, onUnlock, onClose }: UnlockFlowProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
-        {/* Demo Mode Banner */}
-        {demoMode && (
-          <div className="rounded-t-lg bg-yellow-500 px-6 py-3">
-            <div className="flex items-center justify-center gap-2">
-              <svg
-                className="h-5 w-5 text-yellow-900"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              <p className="text-sm font-bold text-yellow-900">
-                DEMO MODE - Timestamp verification bypassed
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">

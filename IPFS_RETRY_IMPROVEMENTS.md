@@ -61,8 +61,8 @@ Attempt 2: Wait ~1s (0.7-1.3s with jitter)
 Attempt 3: Wait ~2s (1.4-2.6s with jitter)
   ↓ (fails)
 Attempt 4: Wait ~4s (2.8-5.2s with jitter)
-  ↓ (fails)
-Fallback to Pinata (same retry logic)
+  ↓ (fails after 3 attempts)
+Throw: Upload failed error
 ```
 
 ## Code Quality
@@ -79,7 +79,6 @@ Fallback to Pinata (same retry logic)
 2. **Rate Limit Test**: Trigger 429 errors to verify backoff behavior
 3. **Non-Retryable Test**: Send invalid auth token to verify fail-fast
 4. **Jitter Test**: Monitor retry timing to confirm randomization
-5. **Fallback Test**: Force Web3.Storage failure to verify Pinata fallback
 
 ## Related Files
 

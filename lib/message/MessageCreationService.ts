@@ -65,6 +65,7 @@ export class MessageCreationService {
   ): Promise<MessageCreationResult> {
     let aesKey: CryptoKey | null = null;
     let aesKeyData: ArrayBuffer | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let encryptedData: any = null;
 
     try {

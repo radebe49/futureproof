@@ -9,11 +9,11 @@ FutureProof is a decentralized time-capsule application that enables users to cr
 ## Key Features
 
 - Client-side encryption with AES-256-GCM (all encryption/decryption happens in browser)
-- Decentralized storage via IPFS (Web3.Storage)
-- Blockchain-enforced unlock conditions on Polkadot Westend testnet
+- Decentralized storage via IPFS (Storacha Network)
+- Blockchain-enforced unlock conditions on Passet Hub (Polkadot testnet)
 - Record or upload audio/video messages
 - Time-locked message delivery
-- Talisman wallet integration for blockchain interactions
+- Talisman or MetaMask wallet integration for blockchain interactions
 
 ## Privacy Guarantees
 

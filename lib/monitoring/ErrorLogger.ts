@@ -1,13 +1,17 @@
 /**
  * ErrorLogger - Centralized error logging and monitoring
- * 
+ *
  * Provides structured error logging with context, categorization,
  * and integration points for monitoring services.
- * 
+ *
  * Requirements: 12.1 - Log errors for debugging
  */
 
-import { ErrorCategory, ErrorSeverity, classifyError } from '@/utils/errorHandling';
+import {
+  ErrorCategory,
+  ErrorSeverity,
+  classifyError,
+} from "@/utils/errorHandling";
 
 /**
  * Error log entry
@@ -21,7 +25,7 @@ export interface ErrorLogEntry {
   context: string;
   userAddress?: string;
   stackTrace?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 /**
@@ -33,7 +37,7 @@ export class ErrorLogger {
 
   /**
    * Log an error with context
-   * 
+   *
    * @param error The error to log
    * @param context Context where the error occurred
    * @param additionalData Additional data to include
@@ -41,10 +45,10 @@ export class ErrorLogger {
   static log(
     error: Error | string,
     context: string,
-    additionalData?: Record<string, any>
+    additionalData?: Record<string, unknown>
   ): void {
     const errorInfo = classifyError(error);
-    const errorObj = typeof error === 'string' ? new Error(error) : error;
+    const errorObj = typeof error === "string" ? new Error(error) : error;
 
     const entry: ErrorLogEntry = {
       timestamp: Date.now(),
@@ -74,7 +78,7 @@ export class ErrorLogger {
     );
 
     // In production, send to monitoring service
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       this.sendToMonitoring(entry);
     }
   }
@@ -97,7 +101,7 @@ export class ErrorLogger {
 
   /**
    * Send error to monitoring service (placeholder)
-   * 
+   *
    * In production, integrate with services like:
    * - Sentry
    * - LogRocket
@@ -120,14 +124,14 @@ export class ErrorLogger {
    * Get logs by category
    */
   static getLogsByCategory(category: ErrorCategory): ErrorLogEntry[] {
-    return this.logs.filter((log) => log.category === category);
+    return this.logs.filter((_log) => _log.category === category);
   }
 
   /**
    * Get logs by severity
    */
   static getLogsBySeverity(severity: ErrorSeverity): ErrorLogEntry[] {
-    return this.logs.filter((log) => log.severity === severity);
+    return this.logs.filter((_log) => _log.severity === severity);
   }
 
   /**

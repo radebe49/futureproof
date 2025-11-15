@@ -21,7 +21,7 @@ The core principle is "Guaranteed by math, not corporations" - no plaintext medi
 │  │  └──────────────┘  └──────────────┘  └──────────────┘ │ │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │ │
 │  │  │ Media Layer  │  │ Storage Layer│  │Contract Layer│ │ │
-│  │  │(MediaRecorder│  │ (IPFS Client)│  │(Polkadot.js) │ │ │
+│  │  │(MediaRecorder│  │ (Storacha)   │  │(Polkadot.js) │ │ │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘ │ │
 │  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
@@ -31,9 +31,9 @@ The core principle is "Guaranteed by math, not corporations" - no plaintext medi
         │                     │                     │
         ▼                     ▼                     ▼
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Web3.Storage │    │   Polkadot   │    │   Talisman   │
-│   (IPFS)     │    │   Westend    │    │    Wallet    │
-│              │    │   Testnet    │    │  Extension   │
+│   Storacha   │    │   Polkadot   │    │   Talisman   │
+│   Network    │    │   Westend    │    │    Wallet    │
+│   (IPFS)     │    │   Testnet    │    │  Extension   │
 └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
@@ -44,7 +44,7 @@ The core principle is "Guaranteed by math, not corporations" - no plaintext medi
 - **Styling**: Tailwind CSS for responsive design
 - **Wallet Integration**: @polkadot/extension-dapp, @polkadot/api
 - **Blockchain**: Polkadot.js API for Westend testnet interaction
-- **Storage**: Web3.Storage SDK for IPFS uploads (with Pinata fallback)
+- **Storage**: Storacha Network (formerly Web3.Storage) for IPFS uploads
 - **Encryption**: Web Crypto API (AES-256-GCM)
 - **Media**: MediaRecorder API for recording
 - **State Management**: React Context + hooks
@@ -169,16 +169,31 @@ interface EncryptedKey {
 **Purpose**: Upload encrypted content to decentralized storage
 
 **Key Components**:
-- `IPFSService`: Web3.Storage integration
-- `PinataFallback`: Backup pinning service
+- `StorachaService`: Storacha Network integration (recommended)
+- `IPFSService`: Legacy Web3.Storage integration (backward compatibility)
+- `MockIPFSService`: Testing without real uploads
 - `UploadProgress`: Progress tracking component
 
 **Interfaces**:
 ```typescript
+// Storacha Network (recommended)
+interface StorachaUploadResult {
+  cid: string;
+  size: number;
+  provider: 'storacha';
+}
+
+interface AuthState {
+  isAuthenticated: boolean;
+  email?: string;
+  spaceDid?: string;
+}
+
+// Legacy Web3.Storage (backward compatibility)
 interface IPFSUploadResult {
   cid: string;
   size: number;
-  provider: 'web3.storage' | 'pinata';
+  provider: 'web3.storage';
 }
 
 interface UploadOptions {
@@ -189,14 +204,31 @@ interface UploadOptions {
 ```
 
 **Key Functions**:
-- Upload encrypted blobs to Web3.Storage
-- Fallback to Pinata on failure
-- Track upload progress
-- Handle chunked uploads for large files
-- Return IPFS CID for retrieval
-- Verify automatic pinning across nodes
+- **Storacha Network** (recommended):
+  - Email-based authentication with UCAN delegation
+  - Space creation and management
+  - Upload encrypted blobs with progress tracking
+  - CID verification and accessibility checks
+  - Gateway URL generation
+  - 99.9% availability with CDN-level speeds
+- **Legacy Web3.Storage** (backward compatibility):
+  - Upload encrypted blobs to Web3.Storage
+  - Track upload progress
+  - Handle chunked uploads for large files
+- **Common Features**:
+  - Return IPFS CID for retrieval
+  - Verify automatic pinning across nodes
+  - Retry logic with exponential backoff
 
-> **After upload, IPFSService SHALL verify CID accessibility (attempt retrieval); on failure or missing pin confirmation, retry or invoke Pinata fallback and surface the state to the user.**
+> **After upload, StorachaService SHALL verify CID accessibility (attempt retrieval); on failure, retry with exponential backoff and surface the state to the user.**
+
+**Storacha Authentication Flow**:
+1. User enters email address
+2. Storacha sends verification email
+3. User clicks verification link
+4. User selects payment plan (free tier: 5GB storage + egress)
+5. Space is created automatically
+6. Service is ready for uploads
 
 ### 5. Smart Contract Module
 
@@ -447,8 +479,7 @@ interface EncryptionMetadata {
    - Memory allocation failed → Suggest smaller file
 
 4. **Storage Errors**
-   - Web3.Storage upload failed → Fallback to Pinata
-   - Pinata upload failed → Display error and allow retry
+   - Storacha upload failed → Display error and allow retry
    - IPFS retrieval failed → Retry with exponential backoff
    - Network timeout → Show retry option
 
@@ -468,7 +499,6 @@ interface EncryptionMetadata {
 ### Error Recovery Strategies
 
 - Automatic retry with exponential backoff for network errors
-- Fallback providers (Pinata for IPFS)
 - Clear error messages with actionable guidance
 - Transaction failure guidance with faucet links
 - State recovery from localStorage where applicable
@@ -575,14 +605,10 @@ NEXT_PUBLIC_CONTRACT_ADDRESS=<contract_address>
 NEXT_PUBLIC_RPC_ENDPOINT=wss://westend-rpc.polkadot.io
 NEXT_PUBLIC_NETWORK=westend
 
-# Storacha (w3up-client) uses email-based authentication
-# No API token required - authentication via email or delegation
-
-# Optional: Pinata (alternative IPFS provider)
-NEXT_PUBLIC_PINATA_API_KEY=<key>
-NEXT_PUBLIC_PINATA_SECRET=<secret>
-
-NEXT_PUBLIC_DEMO_MODE=false
+# Storacha Network Configuration
+NEXT_PUBLIC_STORACHA_GATEWAY=storacha.link  # Optional, defaults to storacha.link
+# Note: Storacha uses email-based authentication - no API keys required!
+# Authentication happens in-browser via UCAN delegation
 ```
 
 ### CI/CD Pipeline

@@ -19,7 +19,6 @@ interface ReceivedMessagesProps {
   address: string;
 }
 
-const UNLOCKED_MESSAGES_KEY = "futureproof_unlocked_messages";
 const ITEMS_PER_PAGE = 12;
 
 export function ReceivedMessages({ address }: ReceivedMessagesProps) {
@@ -32,54 +31,18 @@ export function ReceivedMessages({ address }: ReceivedMessagesProps) {
   const router = useRouter();
 
   /**
-   * Get unlocked message IDs from localStorage
-   *
-   * Requirements: 8.4 - Track unlocked messages in localStorage
-   */
-  const getUnlockedMessageIds = useCallback((): Set<string> => {
-    try {
-      const stored = localStorage.getItem(UNLOCKED_MESSAGES_KEY);
-      if (stored) {
-        return new Set(JSON.parse(stored));
-      }
-    } catch (err) {
-      console.error("Error reading unlocked messages from localStorage:", err);
-    }
-    return new Set();
-  }, []);
-
-  /**
-   * Mark a message as unlocked in localStorage
-   * 
-   * Note: This function is currently unused but will be needed when implementing
-   * the unlock flow in task 9. Keeping it for future use.
-   */
-  const markMessageAsUnlocked = useCallback((_messageId: string) => {
-    try {
-      const unlocked = getUnlockedMessageIds();
-      unlocked.add(_messageId);
-      localStorage.setItem(
-        UNLOCKED_MESSAGES_KEY,
-        JSON.stringify(Array.from(unlocked))
-      );
-    } catch (err) {
-      console.error("Error saving unlocked message to localStorage:", err);
-    }
-  }, [getUnlockedMessageIds]);
-
-  // Suppress unused variable warning - this will be used in task 9
-  void markMessageAsUnlocked;
-
-  /**
    * Convert MessageMetadata to Message with calculated status
    *
    * Requirements: 8.3 - Calculate status (Locked/Unlockable/Unlocked)
+   * 
+   * Note: Status is determined purely by comparing current time with unlock timestamp.
+   * No localStorage tracking needed - the blockchain timestamp is the source of truth.
    */
   const convertToMessage = useCallback(
     (metadata: MessageMetadata): Message => {
-      const unlockedIds = getUnlockedMessageIds();
-      const isUnlocked = unlockedIds.has(metadata.id);
-      const status = calculateMessageStatus(metadata.unlockTimestamp, isUnlocked);
+      // Message is unlockable if current time >= unlock timestamp
+      const isUnlockable = Date.now() >= metadata.unlockTimestamp;
+      const status = calculateMessageStatus(metadata.unlockTimestamp, isUnlockable);
 
       return {
         id: metadata.id,
@@ -93,7 +56,7 @@ export function ReceivedMessages({ address }: ReceivedMessagesProps) {
         createdAt: metadata.createdAt,
       };
     },
-    [getUnlockedMessageIds]
+    []
   );
 
   /**
@@ -126,18 +89,16 @@ export function ReceivedMessages({ address }: ReceivedMessagesProps) {
    * Requirements: 8.5 - Implement real-time status updates
    */
   const updateStatuses = useCallback(() => {
-    const unlockedIds = getUnlockedMessageIds();
-
     setMessages((prevMessages) =>
       prevMessages.map((message) => {
-        const isUnlocked = unlockedIds.has(message.id);
+        const isUnlockable = Date.now() >= message.unlockTimestamp;
         return {
           ...message,
-          status: calculateMessageStatus(message.unlockTimestamp, isUnlocked),
+          status: calculateMessageStatus(message.unlockTimestamp, isUnlockable),
         };
       })
     );
-  }, [getUnlockedMessageIds]);
+  }, []);
 
   /**
    * Handle unlock button click

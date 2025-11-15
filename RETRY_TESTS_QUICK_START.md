@@ -46,11 +46,11 @@ Open http://localhost:3000 in browser with Talisman installed
 3. Create new account
 4. Copy the address (starts with 5)
 
-**Option B**: Use any valid Westend address
+**Option B**: Use any valid Polkadot address
 
-- Get from faucet page: https://faucet.polkadot.io/westend
+- Get from faucet page: https://faucet.polkadot.io/paseo
 - Or use a friend's address
-- Any valid SS58 address works now!
+- Any valid SS58 or Ethereum address works now!
 
 ---
 
@@ -61,8 +61,8 @@ Open http://localhost:3000 in browser with Talisman installed
 **Setup**:
 
 - Network: No throttling
-- Wallet: Connected with WND tokens
-- Recipient: Valid Westend address (from step 3 above)
+- Wallet: Connected with PAS tokens
+- Recipient: Valid Polkadot address (from step 3 above)
 
 **Steps**:
 
@@ -175,15 +175,15 @@ Open http://localhost:3000 in browser with Talisman installed
 
 ### "Invalid Polkadot address format"
 
-- Check address starts with 5 (Westend)
-- Verify it's 47-48 characters long
+- Check address format (SS58 starts with 5, Ethereum starts with 0x)
+- Verify it's the correct length
 - No spaces or special characters
 
 ### "Insufficient balance" / "funds"
 
-- Get WND tokens from faucet: https://faucet.polkadot.io/westend
+- Get PAS tokens from faucet: https://faucet.polkadot.io/paseo
 - Wait 30 seconds for tokens to arrive
-- Check balance in Talisman
+- Check balance in Talisman or MetaMask
 
 ### "Transaction was cancelled"
 

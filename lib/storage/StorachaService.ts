@@ -1,0 +1,439 @@
+/**
+ * Storacha Network Storage Service
+ *
+ * Handles encrypted blob uploads to Storacha Network (formerly Web3.Storage)
+ * with progress tracking, CID verification, and improved browser support.
+ *
+ * Requirements: 3.6, 5.1, 5.2, 5.3, 5.4, 5.6
+ */
+
+import { create, type Client } from "@storacha/client";
+import { withTimeout, TIMEOUTS } from "@/utils/timeout";
+
+export interface StorachaUploadResult {
+  cid: string;
+  size: number;
+  provider: "storacha";
+}
+
+export interface UploadOptions {
+  onProgress?: (progress: number) => void;
+  chunked?: boolean;
+  chunkSize?: number;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  email?: string;
+  spaceDid?: string;
+}
+
+const MAX_RETRY_ATTEMPTS = 3;
+const INITIAL_RETRY_DELAY = 1000;
+const STORAGE_KEY = "futureproof_storacha_auth";
+
+/**
+ * StorachaService provides methods for uploading encrypted blobs to IPFS
+ * via Storacha Network with email-based authentication.
+ */
+export class StorachaService {
+  private client: Client | null = null;
+  private authState: AuthState = { isAuthenticated: false };
+
+  constructor() {
+    // Load auth state from localStorage on initialization
+    this.loadAuthState();
+  }
+
+  private loadAuthState(): void {
+    if (typeof window === "undefined") return;
+
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        this.authState = parsed;
+      }
+    } catch (error) {
+      console.warn("Failed to load Storacha auth state:", error);
+    }
+  }
+
+  private saveAuthState(): void {
+    if (typeof window === "undefined") return;
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.authState));
+    } catch (error) {
+      console.warn("Failed to save Storacha auth state:", error);
+    }
+  }
+
+  private clearAuthState(): void {
+    if (typeof window === "undefined") return;
+
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.warn("Failed to clear Storacha auth state:", error);
+    }
+  }
+
+  private async getClient(): Promise<Client> {
+    if (this.client) {
+      return this.client;
+    }
+
+    try {
+      this.client = await create();
+      return this.client;
+    } catch (error) {
+      throw new Error(
+        `Failed to initialize Storacha client: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  async login(email: string): Promise<void> {
+    const client = await this.getClient();
+
+    try {
+      // Type assertion for email format - Storacha expects email format
+      const emailAddress = email as `${string}@${string}`;
+
+      await withTimeout(
+        client.login(emailAddress),
+        TIMEOUTS.IPFS_UPLOAD_SMALL,
+        "Email verification"
+      );
+
+      // Note: waitForPaymentPlan may not be available in all versions
+      // Check if method exists before calling
+      if (
+        "waitForPaymentPlan" in client &&
+        typeof client.waitForPaymentPlan === "function"
+      ) {
+        await (client as any).waitForPaymentPlan();
+      }
+
+      this.authState = {
+        isAuthenticated: true,
+        email,
+      };
+      this.saveAuthState();
+    } catch (error) {
+      throw new Error(
+        `Authentication failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  async createSpace(name?: string): Promise<string> {
+    const client = await this.getClient();
+
+    if (!this.authState.isAuthenticated) {
+      throw new Error("Must be authenticated before creating a space");
+    }
+
+    try {
+      // Create space with optional name and account for recovery
+      const spaceOptions = name
+        ? { name, account: client.agent.did() }
+        : { account: client.agent.did() };
+
+      const space = await client.createSpace(spaceOptions as any);
+
+      await client.setCurrentSpace(space.did());
+
+      this.authState.spaceDid = space.did();
+      this.saveAuthState();
+
+      return space.did();
+    } catch (error) {
+      throw new Error(
+        `Failed to create space: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  /**
+   * Logout and clear authentication state
+   */
+  logout(): void {
+    this.authState = { isAuthenticated: false };
+    this.client = null;
+    this.clearAuthState();
+  }
+
+  getAuthState(): AuthState {
+    return { ...this.authState };
+  }
+
+  isReady(): boolean {
+    return this.authState.isAuthenticated && !!this.authState.spaceDid;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private isRetryableError(error: Error): boolean {
+    const message = error.message.toLowerCase();
+
+    if (
+      message.includes("network") ||
+      message.includes("timeout") ||
+      message.includes("econnrefused") ||
+      message.includes("enotfound") ||
+      message.includes("etimedout") ||
+      message.includes("connection") ||
+      message.includes("fetch failed")
+    ) {
+      return true;
+    }
+
+    if (message.includes("429") || message.includes("rate limit")) {
+      return true;
+    }
+
+    if (message.includes("503") || message.includes("service unavailable")) {
+      return true;
+    }
+
+    if (message.includes("504") || message.includes("gateway timeout")) {
+      return true;
+    }
+
+    if (
+      message.includes("401") ||
+      message.includes("unauthorized") ||
+      message.includes("403") ||
+      message.includes("forbidden") ||
+      message.includes("400") ||
+      message.includes("bad request") ||
+      message.includes("404") ||
+      message.includes("not found") ||
+      message.includes("413") ||
+      message.includes("payload too large")
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  async uploadEncryptedBlob(
+    blob: Blob,
+    filename: string = "encrypted-media",
+    options: UploadOptions = {}
+  ): Promise<StorachaUploadResult> {
+    if (!this.isReady()) {
+      throw new Error(
+        "Client not ready. Please authenticate and create a space first."
+      );
+    }
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
+      try {
+        if (attempt > 0) {
+          const baseDelay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
+          const jitter = Math.random() * 0.3 * baseDelay;
+          const delay = baseDelay + jitter;
+          await this.sleep(delay);
+        }
+
+        const result = await this.uploadToStoracha(blob, filename, options);
+        return result;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error("Unknown error");
+
+        if (!this.isRetryableError(lastError)) {
+          console.error(
+            "Non-retryable error, failing fast:",
+            lastError.message
+          );
+          throw lastError;
+        }
+
+        console.warn(
+          `Storacha upload attempt ${attempt + 1}/${MAX_RETRY_ATTEMPTS} failed:`,
+          lastError.message
+        );
+      }
+    }
+
+    throw new Error(
+      `Upload failed after ${MAX_RETRY_ATTEMPTS} attempts. Last error: ${lastError?.message}`
+    );
+  }
+
+  private async uploadToStoracha(
+    blob: Blob,
+    filename: string,
+    options: UploadOptions
+  ): Promise<StorachaUploadResult> {
+    const client = await this.getClient();
+    const { onProgress } = options;
+
+    const file = new File([blob], filename, { type: blob.type });
+    const totalBytes = blob.size;
+
+    const timeout =
+      blob.size > 10_000_000
+        ? TIMEOUTS.IPFS_UPLOAD_LARGE
+        : TIMEOUTS.IPFS_UPLOAD_SMALL;
+
+    const onStoredChunk = onProgress
+      ? (meta: { size: number }) => {
+          const progress = Math.round((meta.size / totalBytes) * 100);
+          onProgress(Math.min(progress, 99));
+        }
+      : undefined;
+
+    const cid = await withTimeout(
+      client.uploadFile(file, {
+        onShardStored: onStoredChunk,
+      }),
+      timeout,
+      `Storacha upload (${(blob.size / 1024 / 1024).toFixed(2)} MB)`
+    );
+
+    if (onProgress) {
+      onProgress(100);
+    }
+
+    await this.verifyCIDAccessibility(cid.toString());
+
+    return {
+      cid: cid.toString(),
+      size: blob.size,
+      provider: "storacha",
+    };
+  }
+
+  private isValidCID(cid: string): boolean {
+    return (
+      /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/.test(cid) ||
+      /^b[a-z2-7]{58,}/.test(cid) ||
+      /^bafy[a-z2-7]{55,}/.test(cid)
+    );
+  }
+
+  private async verifyCIDAccessibility(cid: string): Promise<void> {
+    if (!this.isValidCID(cid)) {
+      throw new Error(`Invalid CID format: ${cid}`);
+    }
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
+      try {
+        if (attempt > 0) {
+          const baseDelay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
+          const jitter = Math.random() * 0.3 * baseDelay;
+          const delay = baseDelay + jitter;
+          await this.sleep(delay);
+        }
+
+        const gatewayUrl = this.getGatewayUrl(cid);
+
+        const res = await withTimeout(
+          fetch(gatewayUrl, { method: "HEAD" }),
+          TIMEOUTS.IPFS_VERIFICATION,
+          "IPFS CID verification"
+        );
+
+        if (!res.ok) {
+          throw new Error(
+            `CID ${cid} is not accessible (status: ${res.status})`
+          );
+        }
+
+        return;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error("Unknown error");
+
+        if (!this.isRetryableError(lastError)) {
+          console.error(
+            "Non-retryable verification error, failing fast:",
+            lastError.message
+          );
+          throw new Error(`CID verification failed: ${lastError.message}`);
+        }
+
+        console.warn(
+          `CID verification attempt ${attempt + 1}/${MAX_RETRY_ATTEMPTS} failed:`,
+          lastError.message
+        );
+      }
+    }
+
+    throw new Error(
+      `CID verification failed after ${MAX_RETRY_ATTEMPTS} attempts. Last error: ${lastError?.message}`
+    );
+  }
+
+  async downloadEncryptedBlob(cid: string): Promise<Blob> {
+    if (!this.isValidCID(cid)) {
+      throw new Error(`Invalid CID format: ${cid}`);
+    }
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
+      try {
+        if (attempt > 0) {
+          const baseDelay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
+          const jitter = Math.random() * 0.3 * baseDelay;
+          const delay = baseDelay + jitter;
+          await this.sleep(delay);
+        }
+
+        const gatewayUrl = this.getGatewayUrl(cid);
+
+        const res = await withTimeout(
+          fetch(gatewayUrl),
+          TIMEOUTS.IPFS_DOWNLOAD,
+          `IPFS download ${cid}`
+        );
+
+        if (!res.ok) {
+          throw new Error(
+            `Failed to retrieve CID ${cid} (status: ${res.status})`
+          );
+        }
+
+        const blob = await res.blob();
+        return blob;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error("Unknown error");
+
+        if (!this.isRetryableError(lastError)) {
+          console.error(
+            "Non-retryable download error, failing fast:",
+            lastError.message
+          );
+          throw lastError;
+        }
+
+        console.warn(
+          `IPFS download attempt ${attempt + 1}/${MAX_RETRY_ATTEMPTS} failed:`,
+          lastError.message
+        );
+      }
+    }
+
+    throw new Error(
+      `IPFS download failed after ${MAX_RETRY_ATTEMPTS} attempts. Last error: ${lastError?.message}`
+    );
+  }
+
+  getGatewayUrl(cid: string): string {
+    const gateway = process.env.NEXT_PUBLIC_STORACHA_GATEWAY || "storacha.link";
+    return `https://${cid}.ipfs.${gateway}`;
+  }
+}
+
+export const storachaService = new StorachaService();

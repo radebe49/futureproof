@@ -86,17 +86,15 @@ This implementation plan breaks down the FutureProof application into discrete, 
     - Verify CID accessibility after upload (attempt retrieval)
     - _Requirements: 3.6, 5.1, 5.2, 5.4, 5.6_
   
-  - [x] 5.2 Add Pinata fallback service
-    - Install Pinata SDK
-    - Implement Pinata upload as fallback
+  - [x] 5.2 Implement retry logic for storage uploads
     - Retry logic with exponential backoff
-    - Surface upload state to user (Web3.Storage vs Pinata)
+    - Surface upload state to user
     - _Requirements: 5.3_
   
   - [x] 5.3 Build upload progress UI
     - Create UploadProgress component
     - Display upload percentage and status
-    - Show provider being used (Web3.Storage/Pinata)
+    - Show provider being used (Storacha)
     - Handle upload errors with retry option
     - _Requirements: 5.4_
 
@@ -298,7 +296,7 @@ This implementation plan breaks down the FutureProof application into discrete, 
     - Add key backup warnings section
     - Document fallback contract approach
     - Explain Web3.Storage free-tier limitations
-    - List long-term storage options (paid Web3.Storage, Pinata, Arweave)
+    - List long-term storage options (paid Storacha, Arweave)
     - Document export procedure for encrypted CIDs
     - Add iOS Safari limitations
     - Document mobile wallet limitations
@@ -349,7 +347,7 @@ This implementation plan breaks down the FutureProof application into discrete, 
     - _Requirements: 12.1_
 
 - [ ] 15. Deploy smart contract
-  - [ ] 15.1 Write ink! smart contract
+  - [x] 15.1 Write ink! smart contract
     - Create ink! contract project
     - Implement store_message function
     - Implement get_sent_messages query
@@ -357,7 +355,7 @@ This implementation plan breaks down the FutureProof application into discrete, 
     - Add access control and validation
     - _Requirements: 6.2, 7.1, 8.1_
   
-  - [ ] 15.2 Deploy contract to Westend
+  - [x] 15.2 Deploy contract to Westend
     - Compile contract to WASM
     - Deploy to Westend testnet
     - Verify contract on blockchain explorer
@@ -365,8 +363,8 @@ This implementation plan breaks down the FutureProof application into discrete, 
     - _Requirements: 12.5, 13.1_
   
 
-- [ ] 16. Testing and quality assurance
-  - [ ] 16.1 Write unit tests
+- [x] 16. Testing and quality assurance
+  - [x] 16.1 Write unit tests
     - Test encryption/decryption functions
     - Test key generation and management
     - Test IPFS upload/download logic
@@ -375,7 +373,7 @@ This implementation plan breaks down the FutureProof application into discrete, 
     - Test status calculation logic
     - _Requirements: Various_
   
-  - [ ] 16.2 Write integration tests
+  - [x] 16.2 Write integration tests
     - Test wallet connection flow
     - Test message creation end-to-end
     - Test message retrieval and decryption
@@ -383,7 +381,7 @@ This implementation plan breaks down the FutureProof application into discrete, 
     - Test unlock flow with timestamp verification
     - _Requirements: Various_
   
-  - [ ] 16.3 Perform manual testing
+  - [x] 16.3 Perform manual testing
     - Test on Chrome, Firefox, Safari
     - Test Talisman wallet integration
     - Test media recording on different browsers

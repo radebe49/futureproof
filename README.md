@@ -11,8 +11,8 @@ FutureProof is a privacy-first application that allows you to send messages to t
 ## ✨ Features
 
 - 🔐 **Client-side encryption** with AES-256-GCM (all encryption happens in your browser)
-- 🌐 **Decentralized storage** via IPFS using Web3.Storage (w3up-client)
-- ⛓️ **Blockchain-enforced unlock conditions** on Polkadot Westend testnet
+- 🌐 **Decentralized storage** via IPFS using Storacha Network
+- ⛓️ **Blockchain-enforced unlock conditions** on Passet Hub (Polkadot testnet)
 - 🎥 **Record or upload** audio/video messages directly in the browser
 - ⏰ **Time-locked message delivery** with timestamp verification
 - 🦊 **Talisman wallet integration** for blockchain interactions
@@ -28,11 +28,11 @@ FutureProof is a privacy-first application that allows you to send messages to t
 │  │              Next.js Application                        │ │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │ │
 │  │  │   UI Layer   │  │ Crypto Layer │  │ Wallet Layer │ │ │
-│  │  │  (React)     │  │ (Web Crypto) │  │ (Talisman)   │ │ │
+│  │  │  (React)     │  │ (Web Crypto) │  │(Talisman/MM) │ │ │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘ │ │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │ │
 │  │  │ Media Layer  │  │ Storage Layer│  │Contract Layer│ │ │
-│  │  │(MediaRecorder│  │ (IPFS Client)│  │(Polkadot.js) │ │ │
+│  │  │(MediaRecorder│  │ (Storacha)   │  │  (Solidity)  │ │ │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘ │ │
 │  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
@@ -42,9 +42,9 @@ FutureProof is a privacy-first application that allows you to send messages to t
         │                     │                     │
         ▼                     ▼                     ▼
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Web3.Storage │    │   Polkadot   │    │   Talisman   │
-│   (IPFS)     │    │   Westend    │    │    Wallet    │
-│              │    │   Testnet    │    │  Extension   │
+│   Storacha   │    │   Passet Hub │    │  Talisman/   │
+│   Network    │    │   (Polkadot  │    │   MetaMask   │
+│   (IPFS)     │    │   Testnet)   │    │   Wallets    │
 └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
@@ -52,8 +52,8 @@ FutureProof is a privacy-first application that allows you to send messages to t
 
 1. **Create**: Record or upload audio/video content
 2. **Encrypt**: Generate unique AES-256 key and encrypt content locally
-3. **Store**: Upload encrypted content to IPFS via Web3.Storage
-4. **Anchor**: Submit metadata (CID, unlock timestamp, recipient) to Polkadot smart contract
+3. **Store**: Upload encrypted content to IPFS via Storacha Network
+4. **Anchor**: Submit metadata (CID, unlock timestamp, recipient) to Solidity smart contract on Passet Hub
 5. **Wait**: Blockchain enforces the time-lock until unlock timestamp
 6. **Unlock**: Recipient decrypts and plays content after timestamp passes
 
@@ -62,9 +62,10 @@ FutureProof is a privacy-first application that allows you to send messages to t
 - **Framework**: Next.js 14+ with App Router
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS
-- **Blockchain**: Polkadot.js API for Westend testnet
-- **Storage**: @web3-storage/w3up-client (IPFS)
-- **Wallet**: Talisman browser extension via @polkadot/extension-dapp
+- **Blockchain**: Polkadot.js API for Passet Hub testnet (Polkadot ecosystem)
+- **Smart Contracts**: Solidity 0.8.20 compiled to PolkaVM via pallet-revive
+- **Storage**: Storacha Network (formerly Web3.Storage) for decentralized IPFS storage
+- **Wallet**: Talisman or MetaMask browser extension
 - **Cryptography**: Web Crypto API (AES-256-GCM, RSA-OAEP)
 - **Media**: MediaRecorder API for recording
 
@@ -75,9 +76,23 @@ FutureProof is a privacy-first application that allows you to send messages to t
 Before you begin, ensure you have the following installed and configured:
 
 - **Node.js 18+** and npm
-- **Talisman wallet** browser extension ([Install here](https://talisman.xyz/))
-- **Web3.Storage account** (email-based authentication via w3up-client - [Sign up](https://web3.storage/))
-- **Westend testnet tokens** (see [Getting Testnet Tokens](#getting-testnet-tokens) below)
+- **MetaMask or Talisman wallet** with **Ethereum account** ([Setup Guide](WALLET_SETUP_GUIDE.md))
+  - ⚠️ **Important:** Must use Ethereum address (0x...), not Substrate address (5...)
+- **Storacha Network account** (email-based authentication - [Learn more](https://storacha.network/))
+- **Passet Hub testnet tokens (PAS)** from faucet: https://faucet.polkadot.io/paseo
+
+### Storacha Setup
+
+FutureProof uses Storacha Network for decentralized storage. To enable uploads:
+
+1. Start the development server (see below)
+2. Navigate to **Settings** in the app
+3. Enter your email address and click "Connect with Storacha"
+4. Check your email and click the verification link
+5. Select a payment plan (free tier available: 5GB storage + egress)
+6. Your space will be created automatically
+
+
 
 ### Installation
 
@@ -108,48 +123,46 @@ Edit `.env.local` with your configuration:
 
 ```env
 # Smart Contract Configuration
-NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address_here
-NEXT_PUBLIC_RPC_ENDPOINT=wss://westend-rpc.polkadot.io
-NEXT_PUBLIC_NETWORK=westend
+# IMPORTANT: Use Ethereum address format (0x...), NOT Substrate format (5...)
+NEXT_PUBLIC_CONTRACT_ADDRESS=0xeD0fDD2be363590800F86ec8562Dde951654668F
+NEXT_PUBLIC_RPC_ENDPOINT=https://testnet-passet-hub-eth-rpc.polkadot.io
+NEXT_PUBLIC_NETWORK=passet-hub
 
-# Web3.Storage (w3up-client) Configuration
-# Note: w3up-client uses email-based authentication
-# No API token required - authentication happens in-browser
-# See: https://web3.storage/docs/w3up-client/
-
-# Optional: Pinata Fallback (alternative IPFS provider)
-NEXT_PUBLIC_PINATA_API_KEY=your_pinata_api_key_here
-NEXT_PUBLIC_PINATA_SECRET=your_pinata_secret_here
-
-# Demo Mode (for testing without timestamp enforcement)
-NEXT_PUBLIC_DEMO_MODE=false
+# Storacha Network Configuration
+NEXT_PUBLIC_STORACHA_GATEWAY=storacha.link
+# Note: Storacha uses email-based authentication - no API keys required!
+# Authentication happens in-browser via UCAN delegation
+# See: https://docs.storacha.network/js-client/
 ```
 
 ### Environment Variables Explained
 
 | Variable                       | Required | Description                                                          |
 | ------------------------------ | -------- | -------------------------------------------------------------------- |
-| `NEXT_PUBLIC_CONTRACT_ADDRESS` | Yes      | Address of the deployed smart contract on Westend                    |
-| `NEXT_PUBLIC_RPC_ENDPOINT`     | Yes      | Polkadot RPC endpoint (default: `wss://westend-rpc.polkadot.io`)     |
-| `NEXT_PUBLIC_NETWORK`          | Yes      | Network name (use `westend` for testnet)                             |
-| `NEXT_PUBLIC_PINATA_API_KEY`   | No       | Pinata API key for IPFS fallback                                     |
-| `NEXT_PUBLIC_PINATA_SECRET`    | No       | Pinata secret for IPFS fallback                                      |
-| `NEXT_PUBLIC_DEMO_MODE`        | No       | Enable demo mode to bypass timestamp verification (default: `false`) |
+| `NEXT_PUBLIC_CONTRACT_ADDRESS` | Yes      | **Ethereum-format address (0x...)** of deployed Solidity contract    |
+| `NEXT_PUBLIC_RPC_ENDPOINT`     | Yes      | Passet Hub Ethereum RPC endpoint: `https://testnet-passet-hub-eth-rpc.polkadot.io` |
+| `NEXT_PUBLIC_NETWORK`          | Yes      | Network name (use `passet-hub` for testnet)                          |
+| `NEXT_PUBLIC_STORACHA_GATEWAY` | No       | Storacha gateway URL (default: `storacha.link`)                      |
+
+**Important:** Passet Hub uses pallet-revive (PolkaVM) which requires **Ethereum-format addresses (0x...)**, not Substrate SS58 addresses (5...).
 
 ### Getting Testnet Tokens
 
-To interact with the Westend testnet, you'll need WND tokens. Get them from these faucets:
+To interact with Passet Hub testnet, you'll need PAS tokens:
 
-- **Polkadot Faucet**: https://faucet.polkadot.io/westend
-- **Matrix Faucet Bot**: Join the [Westend Faucet room](https://matrix.to/#/#westend_faucet:matrix.org) on Matrix
+- **Polkadot Faucet**: https://faucet.polkadot.io/paseo
 
 **Steps:**
 
-1. Install and open Talisman wallet
-2. Create or import a Polkadot account
-3. Copy your Westend address
-4. Visit the faucet and request tokens (usually 1-10 WND)
+1. Install and open MetaMask or Talisman wallet
+2. **Important:** Create an **Ethereum account** (0x... format)
+   - MetaMask: All accounts are Ethereum by default
+   - Talisman: Select "Ethereum" when creating account (NOT "Polkadot")
+3. Copy your Ethereum address (starts with 0x)
+4. Visit the faucet and request tokens
 5. Wait for confirmation (usually takes 1-2 minutes)
+
+**Note:** Passet Hub uses pallet-revive which requires Ethereum-format addresses (0x...). Substrate addresses (5...) will not work.
 
 ### Development
 
@@ -207,7 +220,7 @@ FutureProof is designed with privacy as the foundation. Here's what makes it sec
 ### Decentralized Architecture
 
 - **No central servers** can access your content
-- **IPFS storage** ensures content is distributed across multiple nodes
+- **IPFS schorage** ensures content is distributed across multiple nodes
 - **Blockchain consensus** enforces unlock conditions—no single authority can override them
 - **Open source** code allows anyone to verify the implementation
 
@@ -230,7 +243,6 @@ FutureProof is designed with privacy as the foundation. Here's what makes it sec
 - Unlock times are enforced by blockchain consensus
 - Recipients cannot decrypt before the timestamp (even with the encrypted key)
 - Verification happens on-chain, not in the application
-- Demo mode is clearly labeled and disabled in production
 
 ## ⚠️ Important Security Notes
 
@@ -245,13 +257,12 @@ FutureProof is designed with privacy as the foundation. Here's what makes it sec
 
 ### Storage Limitations
 
-**Web3.Storage Free Tier:**
+**Storacha Network Free Tier:**
 
-- Free tier provides generous storage but has limits
-- Content is pinned automatically but not guaranteed forever
+- Free tier provides 5GB storage + egress per month
+- Content is pinned automatically with 99.9% availability
 - For critical long-term storage, consider:
-  - **Paid Web3.Storage plans** for guaranteed persistence
-  - **Pinata** as a backup pinning service
+  - **Paid Storacha plans** for increased storage and guaranteed persistence
   - **Arweave** for permanent storage
   - **Export encrypted CIDs** and store them separately (see below)
 
@@ -308,85 +319,38 @@ To ensure long-term access to your messages, export and back up the encrypted CI
 - Recipients receive a claim link they can open on mobile
 - After setting up Talisman on desktop, they can import and decrypt the message
 
-## 📦 Smart Contract Deployment
+## 📦 Smart Contract
 
-### Option 1: Deploy Your Own Contract
+The FutureProof smart contract is written in Solidity 0.8.20 and deployed to Passet Hub testnet via pallet-revive (PolkaVM).
 
-If you have a Rust toolchain and want to deploy your own contract:
+### Contract Details
 
-1. **Install Prerequisites:**
+- **Language**: Solidity 0.8.20
+- **Network**: Passet Hub (Polkadot testnet)
+- **VM**: PolkaVM via pallet-revive
+- **Address Format**: Ethereum (0x...)
+- **ABI**: See `contract/abi.json`
 
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+### Key Contract Methods
 
-# Install ink! CLI
-cargo install cargo-contract --force
-```
+- `storeMessage`: Store encrypted message metadata on-chain
+- `getSentMessages`: Query messages sent by an address
+- `getReceivedMessages`: Query messages received by an address
+- `getMessage`: Retrieve specific message details
 
-2. **Create ink! Contract:**
+### Deploying Your Own Contract
 
-Create a new ink! contract project with the following interface:
+See `contract/DEPLOYMENT_GUIDE.md` for complete deployment instructions using Hardhat.
 
-```rust
-#[ink(message)]
-pub fn store_message(
-    &mut self,
-    encrypted_key_cid: String,
-    encrypted_message_cid: String,
-    message_hash: String,
-    unlock_timestamp: u64,
-    recipient: AccountId,
-) -> Result<MessageId, Error>;
-
-#[ink(message)]
-pub fn get_sent_messages(&self, sender: AccountId) -> Vec<MessageMetadata>;
-
-#[ink(message)]
-pub fn get_received_messages(&self, recipient: AccountId) -> Vec<MessageMetadata>;
-```
-
-3. **Compile Contract:**
+Quick deployment:
 
 ```bash
-cargo contract build --release
+cd contract
+npm install
+npx hardhat run scripts/deploy.js --network passetHub
 ```
 
-4. **Deploy to Westend:**
-
-- Use [Contracts UI](https://contracts-ui.substrate.io/)
-- Connect to Westend testnet
-- Upload and instantiate your contract
-- Copy the contract address to `.env.local`
-
-### Option 2: Use Existing Contract (Fallback Approach)
-
-If you don't have a Rust toolchain or prefer to use an existing contract:
-
-**Fallback Contract Details:**
-
-- **Network**: Westend Testnet
-- **Contract Address**: `[To be provided after deployment]`
-- **ABI**: See `docs/contract-abi.json`
-
-**Verification:**
-
-1. Visit [Polkadot.js Apps](https://polkadot.js.org/apps/)
-2. Connect to Westend testnet
-3. Navigate to Developer > Contracts
-4. Add the contract address
-5. Verify the contract code and ABI
-
-**Switching Contracts:**
-Simply update `NEXT_PUBLIC_CONTRACT_ADDRESS` in `.env.local` to switch between contracts.
-
-### Contract ABI
-
-The contract ABI is documented in `docs/developer-guide.md`. Key methods:
-
-- `store_message`: Store encrypted message metadata on-chain
-- `get_sent_messages`: Query messages sent by an address
-- `get_received_messages`: Query messages received by an address
+Update `.env.local` with your deployed contract address.
 
 ## 🔑 Key Conversion Libraries
 
@@ -453,6 +417,12 @@ const redeemPackage = {
 
 ## 📚 Documentation
 
+### Quick Start
+
+- **[Passet Hub Quick Reference](PASSET_HUB_QUICK_REFERENCE.md)**: Essential commands and configuration
+- **[Quick Start Guide](QUICK_START_PASSET_HUB.md)**: 5-minute setup for Passet Hub
+- **[Wallet Setup Guide](WALLET_SETUP_GUIDE.md)**: Configure MetaMask or Talisman
+
 ### For Users
 
 - **[User Guide](docs/user-guide.md)**: Step-by-step tutorials for using FutureProof
@@ -460,13 +430,15 @@ const redeemPackage = {
 
 ### For Developers
 
+- **[RPC Endpoints Reference](docs/RPC_ENDPOINTS.md)**: Complete guide to Passet Hub RPC endpoints
+- **[Contract Deployment Guide](contract/DEPLOYMENT_GUIDE.md)**: Deploy Solidity contracts to Passet Hub
 - **[Developer Guide](docs/developer-guide.md)**: API reference, architecture, and technical details
 - **[Requirements](.kiro/specs/futureproof-app/requirements.md)**: Detailed requirements specification
 - **[Design](.kiro/specs/futureproof-app/design.md)**: Architecture and design decisions
-- **[Implementation Tasks](.kiro/specs/futureproof-app/tasks.md)**: Development roadmap
 
 ### Additional Resources
 
+- **[RPC Discovery Summary](RPC_DISCOVERY_SUMMARY.md)**: How we found the correct RPC endpoints
 - **[Error Handling](docs/ERROR_HANDLING_QUICK_REFERENCE.md)**: Error handling patterns
 - **[Network Resilience](docs/NETWORK_RESILIENCE.md)**: Retry logic and timeout handling
 - **[Testing Guide](docs/EDGE_CASE_TESTING.md)**: Testing strategies and edge cases
@@ -487,9 +459,10 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 🙏 Acknowledgments
 
-- Built on [Polkadot](https://polkadot.network/) blockchain infrastructure
-- Storage powered by [Web3.Storage](https://web3.storage/)
-- Wallet integration via [Talisman](https://talisman.xyz/)
+- Built on [Polkadot](https://polkadot.network/) blockchain infrastructure (Passet Hub testnet)
+- Smart contracts powered by [pallet-revive](https://github.com/paritytech/polkadot-sdk/tree/master/substrate/frame/revive) (PolkaVM)
+- Storage powered by [Storacha Network](https://storacha.network/) (formerly Web3.Storage)
+- Wallet integration via [Talisman](https://talisman.xyz/) and [MetaMask](https://metamask.io/)
 - UI framework by [Next.js](https://nextjs.org/) and [Tailwind CSS](https://tailwindcss.com/)
 
 ## 📞 Support
