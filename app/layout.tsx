@@ -3,6 +3,7 @@ import "./globals.css";
 import { WalletProvider } from "@/lib/wallet/WalletProvider";
 import { Navigation, Footer } from "@/components/layout";
 import { ToastProvider, SkipToContent } from "@/components/ui";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: "Lockdrop - Guaranteed by math, not corporations",
@@ -27,6 +28,7 @@ export default function RootLayout({
             <Footer />
           </WalletProvider>
         </ToastProvider>
+        <Analytics />
       </body>
     </html>
   );
