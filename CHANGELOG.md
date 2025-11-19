@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to FutureProof will be documented in this file.
+All notable changes to Lockdrop will be documented in this file.
 
 ## [1.0.0] - 2025-11-17
 

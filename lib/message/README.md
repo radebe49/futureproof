@@ -1,6 +1,6 @@
 # Message Creation Module
 
-This module orchestrates the end-to-end creation of time-locked messages in the FutureProof application.
+This module orchestrates the end-to-end creation of time-locked messages in the Lockdrop application.
 
 ## Overview
 

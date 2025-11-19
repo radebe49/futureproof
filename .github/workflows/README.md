@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This directory contains automated workflows for FutureProof's CI/CD pipeline.
+This directory contains automated workflows for Lockdrop's CI/CD pipeline.
 
 ## Workflows
 
@@ -81,8 +81,8 @@ gh workflow run dependency-update.yml
 Add to README.md:
 
 ```markdown
-![CI/CD](https://github.com/USERNAME/futureproof-app/workflows/CI/CD%20Pipeline/badge.svg)
-![CodeQL](https://github.com/USERNAME/futureproof-app/workflows/CodeQL%20Security%20Analysis/badge.svg)
+![CI/CD](https://github.com/USERNAME/lockdrop-app/workflows/CI/CD%20Pipeline/badge.svg)
+![CodeQL](https://github.com/USERNAME/lockdrop-app/workflows/CodeQL%20Security%20Analysis/badge.svg)
 ```
 
 ## Documentation

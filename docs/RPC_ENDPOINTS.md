@@ -32,7 +32,7 @@ Passet Hub testnet provides two types of RPC endpoints for different use cases. 
 forge create --resolc \
   --rpc-url https://testnet-passet-hub-eth-rpc.polkadot.io \
   --private-key $PRIVATE_KEY \
-  contracts/FutureProof.sol:FutureProof
+  contracts/Lockdrop.sol:Lockdrop
 
 # Check nonce
 cast nonce 0xYourAddress \
@@ -189,7 +189,7 @@ When experiencing RPC issues, verify:
 
 If you encounter issues not covered here:
 
-1. Check the [GitHub Issues](https://github.com/yourusername/futureproof-app/issues)
+1. Check the [GitHub Issues](https://github.com/yourusername/lockdrop-app/issues)
 2. Review the [Deployment Guide](../contract/DEPLOYMENT_GUIDE.md)
 3. Ask on [Polkadot Stack Exchange](https://polkadot.stackexchange.com/)
 

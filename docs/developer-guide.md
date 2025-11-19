@@ -380,7 +380,7 @@ const claimed = await RedeemPackageService.claimRedeemPackage(
 
 ### Contract Interface
 
-The FutureProof smart contract is written in ink! and deployed on Polkadot Westend testnet.
+The Lockdrop smart contract is written in ink! and deployed on Polkadot Westend testnet.
 
 #### Storage Structure
 
@@ -503,9 +503,9 @@ The contract ABI is available in JSON format for use with Polkadot.js:
     "compiler": "rustc 1.70.0"
   },
   "contract": {
-    "name": "futureproof_contract",
+    "name": "lockdrop_contract",
     "version": "1.0.0",
-    "authors": ["FutureProof Team"]
+    "authors": ["Lockdrop Team"]
   },
   "spec": {
     "constructors": [
@@ -1259,7 +1259,7 @@ import Image from 'next/image';
 
 <Image
   src="/logo.png"
-  alt="FutureProof Logo"
+  alt="Lockdrop Logo"
   width={200}
   height={50}
   priority
@@ -1586,4 +1586,4 @@ export interface RedeemPackage {
 
 **Last Updated**: 2024
 **Version**: 1.0.0
-**Maintainers**: FutureProof Team
+**Maintainers**: Lockdrop Team

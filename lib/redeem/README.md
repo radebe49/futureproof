@@ -176,7 +176,7 @@ const { cid } = await IPFSService.uploadFile(packageBlob);
 // Generate claim link
 const claimLink = RedeemPackageService.generateClaimLink(
   cid,
-  'https://futureproof.app'
+  'https://lockdrop.app'
 );
 
 console.log('Share this link:', claimLink.url);

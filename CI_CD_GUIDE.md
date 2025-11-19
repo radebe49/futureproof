@@ -1,6 +1,6 @@
 # CI/CD Pipeline Guide
 
-This guide explains the Continuous Integration and Continuous Deployment (CI/CD) pipeline for FutureProof.
+This guide explains the Continuous Integration and Continuous Deployment (CI/CD) pipeline for Lockdrop.
 
 ## Overview
 
@@ -173,8 +173,8 @@ The output will show:
 Add these badges to your README.md:
 
 ```markdown
-![CI/CD](https://github.com/USERNAME/futureproof-app/workflows/CI/CD%20Pipeline/badge.svg)
-![CodeQL](https://github.com/USERNAME/futureproof-app/workflows/CodeQL%20Security%20Analysis/badge.svg)
+![CI/CD](https://github.com/USERNAME/lockdrop-app/workflows/CI/CD%20Pipeline/badge.svg)
+![CodeQL](https://github.com/USERNAME/lockdrop-app/workflows/CodeQL%20Security%20Analysis/badge.svg)
 ![Deployment](https://img.shields.io/badge/deployment-vercel-black)
 ```
 
@@ -439,7 +439,7 @@ jobs:
   deploy:
     environment:
       name: production
-      url: https://futureproof-app.vercel.app
+      url: https://lockdrop-app.vercel.app
 ```
 
 ## Next Steps

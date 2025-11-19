@@ -238,16 +238,16 @@ return withRetry(
    ```typescript
    declare global {
      interface Window {
-       __futureproof_extension_cache?: ExtensionModules;
+       __lockdrop_extension_cache?: ExtensionModules;
      }
    }
    
    function getExtensionCache(): ExtensionModules {
-     if (!window.__futureproof_extension_cache) {
-       window.__futureproof_extension_cache = {};
+     if (!window.__lockdrop_extension_cache) {
+       window.__lockdrop_extension_cache = {};
        // Preload modules...
      }
-     return window.__futureproof_extension_cache;
+     return window.__lockdrop_extension_cache;
    }
    ```
 

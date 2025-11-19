@@ -19,7 +19,7 @@
 Polkadot Relay Chain (Paseo Testnet)
     └── Passet Hub (Parachain #1000)
             └── pallet-revive (Solidity → PolkaVM compiler)
-                    └── Your FutureProof Contract (0xeD0f...)
+                    └── Your Lockdrop Contract (0xeD0f...)
 ```
 
 **Key Points:**
@@ -31,7 +31,7 @@ Polkadot Relay Chain (Paseo Testnet)
 ### What pallet-revive Does
 
 ```
-Solidity Code (FutureProof.sol)
+Solidity Code (Lockdrop.sol)
     ↓ [Compiled by pallet-revive]
 PolkaVM Bytecode (Polkadot's VM)
     ↓ [Deployed to Passet Hub]
@@ -165,7 +165,7 @@ Network can upgrade without hard forks.
 import { web3Enable, web3Accounts } from '@polkadot/extension-dapp';
 
 // This connects to Talisman (Polkadot wallet)
-const extensions = await web3Enable('FutureProof');
+const extensions = await web3Enable('Lockdrop');
 const accounts = await web3Accounts();
 
 // Even though you use ethers.js for contracts,
@@ -263,7 +263,7 @@ But it's still **inside the Polkadot mall**, using:
 │  ┌───────────────────────────────────────────────────┐  │
 │  │           pallet-revive (Solidity Support)        │  │
 │  │  ┌─────────────────────────────────────────────┐  │  │
-│  │  │    Your FutureProof Contract (PolkaVM)      │  │  │
+│  │  │    Your Lockdrop Contract (PolkaVM)      │  │  │
 │  │  │         0xeD0fDD2be363590800F86ec...        │  │  │
 │  │  └─────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────┘  │

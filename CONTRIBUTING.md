@@ -139,7 +139,7 @@ When contributing, please update relevant documentation:
 ## Project Structure
 
 ```
-futureproof-app/
+lockdrop-app/
 ├── app/              # Next.js pages and layouts
 ├── components/       # React components (by feature)
 ├── lib/              # Core services and business logic

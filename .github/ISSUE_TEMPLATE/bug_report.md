@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug or issue with FutureProof
+about: Report a bug or issue with Lockdrop
 title: '[BUG] '
 labels: bug
 assignees: ''

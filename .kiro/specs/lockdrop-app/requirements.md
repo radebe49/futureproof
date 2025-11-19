@@ -2,8 +2,8 @@
 
 ## Introduction
 
-FutureProof is a decentralized time-capsule application that enables users to record or upload audio/video messages, encrypt them locally in the browser, store them on IPFS via Web3.Storage, and anchor unlock metadata on the Polkadot testnet (Westend). The application guarantees privacy through client-side encryption and timestamp-enforced unlocking, ensuring no plaintext media or encryption keys leave the user's browser or rely on centralized servers.
-Note: The design anticipates future cross-chain expansion to other Polkadot parachains via XCM (Cross-Consensus Messaging). This ensures FutureProof can evolve to support multiple networks while maintaining full interoperability and decentralization.
+Lockdrop is a decentralized time-capsule application that enables users to record or upload audio/video messages, encrypt them locally in the browser, store them on IPFS via Web3.Storage, and anchor unlock metadata on the Polkadot testnet (Westend). The application guarantees privacy through client-side encryption and timestamp-enforced unlocking, ensuring no plaintext media or encryption keys leave the user's browser or rely on centralized servers.
+Note: The design anticipates future cross-chain expansion to other Polkadot parachains via XCM (Cross-Consensus Messaging). This ensures Lockdrop can evolve to support multiple networks while maintaining full interoperability and decentralization.
 
 
 ## Glossary

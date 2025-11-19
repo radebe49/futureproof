@@ -1,6 +1,6 @@
 # Deployment Checklist
 
-Use this checklist to ensure proper deployment setup for FutureProof.
+Use this checklist to ensure proper deployment setup for Lockdrop.
 
 ## Pre-Deployment
 

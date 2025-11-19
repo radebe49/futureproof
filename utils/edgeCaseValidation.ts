@@ -119,7 +119,7 @@ export async function isWalletInstalled(): Promise<boolean> {
       web3EnableCache = web3Enable;
     }
     
-    const extensions = await web3Enable('FutureProof');
+    const extensions = await web3Enable('Lockdrop');
     return extensions.length > 0;
   } catch {
     return false;

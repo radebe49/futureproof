@@ -1,6 +1,6 @@
 # Quick Start: Deployment Setup
 
-This is a quick reference for deploying FutureProof. For detailed instructions, see the full guides.
+This is a quick reference for deploying Lockdrop. For detailed instructions, see the full guides.
 
 ## 1. GitHub Repository (5 minutes)
 
@@ -8,10 +8,10 @@ This is a quick reference for deploying FutureProof. For detailed instructions, 
 # Create repository on GitHub (public)
 # Then connect and push:
 
-git remote add origin https://github.com/USERNAME/futureproof-app.git
+git remote add origin https://github.com/USERNAME/lockdrop-app.git
 git branch -M main
 git add .
-git commit -m "Initial commit: FutureProof app"
+git commit -m "Initial commit: Lockdrop app"
 git push -u origin main
 ```
 

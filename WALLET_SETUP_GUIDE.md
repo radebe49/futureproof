@@ -25,7 +25,7 @@ Talisman is the recommended wallet for Polkadot ecosystem projects. It supports 
 1. Open Talisman extension
 2. Click "Add Account" or "+"
 3. **Select "Ethereum" account type** (not Polkadot!)
-4. Name your account (e.g., "FutureProof ETH")
+4. Name your account (e.g., "Lockdrop ETH")
 5. Verify address starts with **0x**
 
 ### Get Tokens
@@ -174,7 +174,7 @@ MetaMask is a popular alternative as all accounts are Ethereum by default.
 **Solution:**
 1. Create a new account in Talisman
 2. Select **"Ethereum"** as account type
-3. Use this new account for FutureProof
+3. Use this new account for Lockdrop
 
 ---
 

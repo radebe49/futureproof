@@ -68,7 +68,7 @@ Common errors and solutions:
    - Open Talisman
    - Click "Add Account" or "+"
    - Select "Ethereum" (NOT Polkadot!)
-   - Name it (e.g., "FutureProof ETH")
+   - Name it (e.g., "Lockdrop ETH")
    - Verify address starts with 0x
 
 ### For MetaMask Users

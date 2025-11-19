@@ -165,4 +165,4 @@ jobs:
       - name: Create deployment notification
         run: |
           echo "🚀 Production deployment completed successfully!"
-          echo "Deployment URL: https://futureproof-app.vercel.app"
+          echo "Deployment URL: https://lockdrop-app.vercel.app"

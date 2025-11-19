@@ -640,7 +640,7 @@ A: The application is free, but you need Westend testnet tokens (WND) to send me
 **Q: Do I need to create an account?**  
 A: No traditional account needed. You just connect your Talisman wallet, which serves as your identity.
 
-**Q: Can I use FutureProof on mobile?**  
+**Q: Can I use Lockdrop on mobile?**  
 A: The web app works on mobile browsers, but Talisman wallet is currently desktop-only. Mobile wallet support is planned for the future.
 
 **Q: Is my data really private?**  
@@ -654,7 +654,7 @@ A: Yes! All encryption happens in your browser. Your plaintext content never lea
 A: The wallet provides your identity on the blockchain and holds your private keys for decryption. It's like your digital ID and key ring combined.
 
 **Q: Can I use a different wallet besides Talisman?**  
-A: Currently, FutureProof only supports Talisman. Support for other Polkadot wallets may be added in the future.
+A: Currently, Lockdrop only supports Talisman. Support for other Polkadot wallets may be added in the future.
 
 **Q: What if I lose access to my wallet?**  
 A: If you have your seed phrase, you can restore your wallet on any device. Without it, you cannot recover your account or decrypt messages.

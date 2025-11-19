@@ -1,6 +1,6 @@
 # Timeout Implementation Checklist
 
-Track progress on implementing timeout handling across FutureProof.
+Track progress on implementing timeout handling across Lockdrop.
 
 ## Automated Testing Status
 
